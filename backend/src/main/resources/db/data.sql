@@ -1,0 +1,2 @@
+-- 已迁移到 Flyway：
+-- 请使用 backend/src/main/resources/db/migration 下的增量脚本

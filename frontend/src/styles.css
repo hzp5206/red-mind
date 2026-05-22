@@ -1,0 +1,91 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #fff9f5;
+  color: #333333;
+}
+
+.app-sider {
+  border-right: 1px solid #f0e6e1;
+}
+
+.brand {
+  padding: 24px;
+}
+
+.app-header {
+  background: rgba(255, 255, 255, 0.7);
+  border-bottom: 1px solid #f0e6e1;
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+}
+
+.profile-entry {
+  cursor: pointer;
+}
+
+.app-content {
+  padding: 24px;
+}
+
+.sticky-card {
+  position: sticky;
+  top: 24px;
+}
+
+.empty-panel {
+  height: 560px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #fff8f5 0%, #ffffff 100%);
+  border-radius: 12px;
+}
+
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at top, #ffe8ef, #fff9f5 60%);
+}
+
+.login-card {
+  width: 440px;
+  border-radius: 20px;
+}
+
+.preview-panel {
+  min-height: 100%;
+  padding: 20px;
+  border-radius: 16px;
+  background: #fff8f8;
+  border: 1px solid #f5d9df;
+}
+
+.preview-image-placeholder {
+  height: 160px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #ffe5ec, #fff1f4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #b86b7a;
+  margin-bottom: 16px;
+}
+
+.history-version-block {
+  padding: 16px;
+  border: 1px solid #f0e6e1;
+  border-radius: 12px;
+}
+
+.quota-card {
+  margin-bottom: 16px;
+}

@@ -1,0 +1,51 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: red-mind-backend
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3306/red_mind?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    encoding: UTF-8
+  redis:
+    host: 127.0.0.1
+    port: 6379
+    database: 0
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      id-type: auto
+
+knife4j:
+  enable: true
+
+logging:
+  level:
+    com.redmind: info
+
+redmind:
+  jwt:
+    secret: change-this-secret-in-production
+    expire-millis: 604800000
+  ai:
+    provider: mock
+    base-url: https://api.openai.com
+    api-key: replace-me
+    model: gpt-4o-mini
+    chat-path: /v1/chat/completions
