@@ -12,6 +12,7 @@ public class AiSettingResponse {
     private String baseUrl;
     private String model;
     private String chatPath;
+    private String apiKeyValue;
     private String apiKeyMasked;
     private Boolean apiKeyConfigured;
     private List<String> providerOptions;

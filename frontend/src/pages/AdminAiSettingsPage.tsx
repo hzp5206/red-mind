@@ -29,7 +29,7 @@ export function AdminAiSettingsPage() {
         baseUrl: data.data.baseUrl,
         model: data.data.model,
         chatPath: data.data.chatPath,
-        apiKey: '',
+        apiKey: data.data.apiKeyValue || '',
       });
     } finally {
       setLoading(false);
@@ -139,6 +139,7 @@ export function AdminAiSettingsPage() {
           </Form.Item>
           <Form.Item name="apiKey" label="API Key">
             <Input.Password
+              autoComplete="off"
               placeholder={current?.apiKeyMasked ? `当前已配置：${current.apiKeyMasked}` : '输入新的 API Key'}
               disabled={!hasPermission('ai_setting:manage')}
             />

@@ -61,6 +61,7 @@ public class AiSettingService {
             .baseUrl(redMindAiProperties.getBaseUrl())
             .model(redMindAiProperties.getModel())
             .chatPath(redMindAiProperties.getChatPath())
+            .apiKeyValue("replace-me".equals(apiKey) ? "" : apiKey)
             .apiKeyMasked(maskApiKey(apiKey))
             .apiKeyConfigured(StringUtils.isNotBlank(apiKey) && !"replace-me".equals(apiKey))
             .providerOptions(PROVIDER_OPTIONS)

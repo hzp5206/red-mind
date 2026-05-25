@@ -257,6 +257,7 @@ export interface AiSetting {
   baseUrl: string;
   model: string;
   chatPath: string;
+  apiKeyValue?: string;
   apiKeyMasked?: string | null;
   apiKeyConfigured: boolean;
   providerOptions: string[];

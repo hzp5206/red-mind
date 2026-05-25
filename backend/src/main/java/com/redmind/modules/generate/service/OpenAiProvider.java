@@ -18,6 +18,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 
 @Component
@@ -46,7 +47,7 @@ public class OpenAiProvider implements AiProvider {
     @Override
     public List<GeneratedVersion> generate(GenerateRequest request) {
         if (StringUtils.isBlank(aiProperties.getApiKey()) || "replace-me".equals(aiProperties.getApiKey())) {
-            throw new BizException("请先配置真实 AI API Key");
+            throw new BizException("请先配置真实的 AI API Key");
         }
 
         Map<String, Object> requestBody = new HashMap<>();
@@ -59,12 +60,17 @@ public class OpenAiProvider implements AiProvider {
         headers.setBearerAuth(aiProperties.getApiKey());
         headers.setContentType(MediaType.APPLICATION_JSON);
 
-        ResponseEntity<Map> response = restTemplate.exchange(
-            normalizeBaseUrl(aiProperties.getBaseUrl()) + aiProperties.getChatPath(),
-            HttpMethod.POST,
-            new HttpEntity<>(requestBody, headers),
-            Map.class
-        );
+        ResponseEntity<Map> response;
+        try {
+            response = restTemplate.exchange(
+                normalizeBaseUrl(aiProperties.getBaseUrl()) + aiProperties.getChatPath(),
+                HttpMethod.POST,
+                new HttpEntity<>(requestBody, headers),
+                Map.class
+            );
+        } catch (ResourceAccessException exception) {
+            throw new BizException("AI 服务连接超时，请检查 Base URL、网络代理或目标模型服务状态");
+        }
 
         Map responseBody = response.getBody();
         if (responseBody == null) {
@@ -89,6 +95,8 @@ public class OpenAiProvider implements AiProvider {
                 throw new BizException("AI 未生成有效版本");
             }
             return payload.getVersions();
+        } catch (BizException exception) {
+            throw exception;
         } catch (Exception exception) {
             throw new BizException("AI 返回格式不符合预期");
         }

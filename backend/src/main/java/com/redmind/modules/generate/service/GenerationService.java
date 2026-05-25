@@ -9,6 +9,7 @@ import com.redmind.modules.generate.dto.GeneratedVersion;
 import com.redmind.modules.generate.dto.AiRuntimeInfoResponse;
 import com.redmind.modules.generate.entity.GenerationHistory;
 import com.redmind.modules.generate.mapper.GenerationHistoryMapper;
+import com.redmind.modules.setting.service.AiSettingService;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -23,6 +24,7 @@ public class GenerationService {
     private final QuotaService quotaService;
     private final TrendingReferenceService trendingReferenceService;
     private final RedMindAiProperties redMindAiProperties;
+    private final AiSettingService aiSettingService;
     private final ObjectMapper objectMapper;
 
     public GenerationService(AiProviderRouter aiProviderRouter,
@@ -31,6 +33,7 @@ public class GenerationService {
                              QuotaService quotaService,
                              TrendingReferenceService trendingReferenceService,
                              RedMindAiProperties redMindAiProperties,
+                             AiSettingService aiSettingService,
                              ObjectMapper objectMapper) {
         this.aiProviderRouter = aiProviderRouter;
         this.versionReviewService = versionReviewService;
@@ -38,10 +41,12 @@ public class GenerationService {
         this.quotaService = quotaService;
         this.trendingReferenceService = trendingReferenceService;
         this.redMindAiProperties = redMindAiProperties;
+        this.aiSettingService = aiSettingService;
         this.objectMapper = objectMapper;
     }
 
     public GenerateResponse generate(GenerateRequest request) {
+        aiSettingService.refreshRuntimeProperties();
         Long userId = JwtUserContext.getUserId();
         quotaService.checkAndConsume(userId);
         trendingReferenceService.attachReferences(request);
@@ -57,6 +62,7 @@ public class GenerationService {
     }
 
     public AiRuntimeInfoResponse runtimeInfo() {
+        aiSettingService.refreshRuntimeProperties();
         return AiRuntimeInfoResponse.builder()
             .provider(redMindAiProperties.getProvider())
             .model(redMindAiProperties.getModel())
