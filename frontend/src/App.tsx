@@ -12,6 +12,7 @@ import { AdminUsersPage } from './pages/AdminUsersPage';
 import { AdminDashboardPage } from './pages/AdminDashboardPage';
 import { AdminLogsPage } from './pages/AdminLogsPage';
 import { AdminRolesPage } from './pages/AdminRolesPage';
+import { AdminTrendingCopiesPage } from './pages/AdminTrendingCopiesPage';
 
 export default function App() {
   return (
@@ -25,6 +26,7 @@ export default function App() {
           <Route path="/history" element={<HistoryPage />} />
           <Route path="/settings/billing" element={<BillingPage />} />
           <Route path="/admin/templates" element={<AdminTemplatesPage />} />
+          <Route path="/admin/trending-copies" element={<AdminTrendingCopiesPage />} />
           <Route path="/admin/sensitive-words" element={<AdminSensitiveWordsPage />} />
           <Route path="/admin/users" element={<AdminUsersPage />} />
           <Route path="/admin/roles" element={<AdminRolesPage />} />

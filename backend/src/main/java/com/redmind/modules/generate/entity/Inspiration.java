@@ -14,6 +14,7 @@ public class Inspiration {
     private Long id;
     private Long userId;
     private Long historyId;
+    private Long trendingItemId;
     private String customTags;
     private LocalDateTime createdAt;
 }

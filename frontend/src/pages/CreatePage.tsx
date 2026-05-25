@@ -18,7 +18,7 @@ import {
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { generateCopyStream } from '../api/generate';
-import { collectHistory } from '../api/history';
+import { collectHistory, finalizeHistoryVersion } from '../api/history';
 import { getCurrentUser } from '../api/user';
 import { EditorModal } from '../components/EditorModal';
 import { VersionCard } from '../components/VersionCard';
@@ -42,12 +42,20 @@ const hookOptions = ['反差开场', '第一人称体验', '清单利益点', '�
 const structureOptions = ['痛点 → 体验 → 结论', '问题 → 方案 → CTA', '清单 → 场景 → 建议', '对比 → 选择 → 互动'];
 
 interface PrefillState {
+  sourceLabel?: string;
   productName?: string;
   coreDescription?: string;
   style?: string;
   tone?: string;
   styleSample?: string;
   requiredKeywords?: string[];
+  coreSellingPoints?: string[];
+  useScenarios?: string[];
+  targetAudience?: string[];
+  hookPreference?: string;
+  noteStructure?: string;
+  conversionGoal?: string;
+  contentGoal?: string;
 }
 
 const createEmptyScores = (): QualityScores => ({
@@ -79,6 +87,7 @@ const createDraftVersion = (verNum: number): GeneratedVersion => ({
   tags: [],
   publishSuggestions: [],
   prePublishChecks: [],
+  optimizationActions: [],
   qualityScores: createEmptyScores(),
 });
 
@@ -91,6 +100,8 @@ export function CreatePage() {
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingVersion, setEditingVersion] = useState<GeneratedVersion | undefined>();
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [selectedVersion, setSelectedVersion] = useState<number | null>(null);
+  const [prefillSource, setPrefillSource] = useState<string>('');
   const location = useLocation();
 
   useEffect(() => {
@@ -102,6 +113,7 @@ export function CreatePage() {
     if (!state) {
       return;
     }
+    setPrefillSource(state.sourceLabel || '');
     form.setFieldsValue({
       productName: state.productName,
       coreDescription: state.coreDescription,
@@ -109,20 +121,42 @@ export function CreatePage() {
       tone: state.tone || '真诚种草',
       styleSample: state.styleSample,
       requiredKeywords: state.requiredKeywords || [],
+      coreSellingPoints: state.coreSellingPoints || [],
+      useScenarios: state.useScenarios || [],
+      targetAudience: state.targetAudience || [],
+      hookPreference: state.hookPreference || '反差开场',
+      noteStructure: state.noteStructure || '痛点 → 体验 → 结论',
+      conversionGoal: state.conversionGoal || '促进收藏',
+      contentGoal: state.contentGoal || '收藏',
     });
   }, [form, location.state]);
 
   const updateVersion = (nextVersion: GeneratedVersion) => {
     setVersions((prev) => prev.map((item) => (item.verNum === nextVersion.verNum ? nextVersion : item)));
+    setEditingVersion((prev) => (prev?.verNum === nextVersion.verNum ? nextVersion : prev));
+  };
+
+  const handleFinalize = async (version: GeneratedVersion) => {
+    if (!historyId) {
+      messageApi.warning('请先完成一次生成后再设置最终采用版本');
+      return;
+    }
+    await finalizeHistoryVersion(historyId, {
+      ...version,
+      optimizationActions: Array.from(new Set([...(version.optimizationActions || []), 'finalized'])),
+    });
+    setSelectedVersion(version.verNum);
+    messageApi.success(`已将版本 ${version.verNum} 设为最终采用版本`);
   };
 
   const tabItems = useMemo(
     () =>
       versions.map((version) => ({
         key: String(version.verNum),
-        label: `版本 ${version.verNum}`,
+        label: selectedVersion === version.verNum ? `版本 ${version.verNum} · 已采用` : `版本 ${version.verNum}`,
         children: (
           <VersionCard
+            request={form.getFieldsValue(true)}
             version={version}
             onOpenEditor={(currentVersion) => {
               setEditingVersion(currentVersion);
@@ -136,11 +170,12 @@ export function CreatePage() {
               await collectHistory(historyId);
               messageApi.success('已收藏到灵感库');
             }}
+            onFinalize={handleFinalize}
             onVersionChange={updateVersion}
           />
         ),
       })),
-    [historyId, messageApi, versions],
+    [form, historyId, messageApi, selectedVersion, versions],
   );
 
   const handleGenerate = async () => {
@@ -148,6 +183,7 @@ export function CreatePage() {
     setLoading(true);
     setVersions([]);
     setHistoryId(null);
+    setSelectedVersion(null);
 
     const drafts: Record<number, GeneratedVersion> = {};
     try {
@@ -214,11 +250,21 @@ export function CreatePage() {
               </Typography.Text>
             </Space>
 
+            {prefillSource ? (
+              <Alert
+                type="info"
+                showIcon
+                style={{ marginBottom: 16 }}
+                message="已带入外部灵感"
+                description={prefillSource}
+              />
+            ) : null}
+
             <Alert
               type="success"
               showIcon
               style={{ marginBottom: 16 }}
-              message="这轮升级为“爆文内容工作台”"
+              message="当前是爆文内容工作台"
               description="现在不只生成正文，还会同步给出策略切口、标题候选、质量评分和发布前检查。"
             />
 
@@ -342,6 +388,16 @@ export function CreatePage() {
               </Button>
             }
           >
+            {selectedVersion ? (
+              <Alert
+                type="success"
+                showIcon
+                style={{ marginBottom: 16 }}
+                message={`当前最终采用版本：版本 ${selectedVersion}`}
+                description="系统会把这个版本的最终标题、正文、评分和优化动作沉淀到历史记录里。"
+              />
+            ) : null}
+
             {versions.length ? (
               <Tabs items={tabItems} />
             ) : (
@@ -355,7 +411,16 @@ export function CreatePage() {
           </Card>
         </Col>
       </Row>
-      <EditorModal open={editorOpen} version={editingVersion} onClose={() => setEditorOpen(false)} />
+      <EditorModal
+        open={editorOpen}
+        request={form.getFieldsValue(true)}
+        version={editingVersion}
+        onClose={() => setEditorOpen(false)}
+        onSave={(nextVersion) => {
+          updateVersion(nextVersion);
+          setEditorOpen(false);
+        }}
+      />
     </>
   );
 }

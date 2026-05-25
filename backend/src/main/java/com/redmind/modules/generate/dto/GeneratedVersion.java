@@ -1,11 +1,15 @@
 package com.redmind.modules.generate.dto;
 
 import java.util.List;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class GeneratedVersion {
 
     private Integer verNum;
@@ -20,5 +24,6 @@ public class GeneratedVersion {
     private List<String> tags;
     private List<String> publishSuggestions;
     private List<PrePublishCheckItem> prePublishChecks;
+    private List<String> optimizationActions;
     private QualityScores qualityScores;
 }

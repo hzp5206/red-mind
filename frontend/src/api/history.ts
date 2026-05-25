@@ -1,5 +1,5 @@
 import { http } from './http';
-import { ApiResponse, HistoryRecord } from '../types';
+import { ApiResponse, GeneratedVersion, HistoryRecord } from '../types';
 
 export interface HistoryPageResponse {
   total: number;
@@ -22,4 +22,8 @@ export function deleteHistory(id: number) {
 
 export function collectHistory(id: number) {
   return http.post<ApiResponse<null>>(`/history/${id}/collect`);
+}
+
+export function finalizeHistoryVersion(id: number, version: GeneratedVersion) {
+  return http.post<ApiResponse<null>>(`/history/${id}/finalize`, { version });
 }

@@ -1,4 +1,4 @@
-import { Button, DatePicker, Modal, Popconfirm, Select, Space, Table, Tag, Typography, message } from 'antd';
+import { Alert, Button, DatePicker, Modal, Popconfirm, Select, Space, Table, Tag, Typography, message } from 'antd';
 import { ColumnsType } from 'antd/es/table';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -15,6 +15,17 @@ const styleOptions = [
   { label: 'Vlog日常', value: 'vlog' },
   { label: '合集清单', value: 'collection' },
 ];
+
+function parseVersions(results?: string) {
+  if (!results) {
+    return [] as GeneratedVersion[];
+  }
+  try {
+    return JSON.parse(results) as GeneratedVersion[];
+  } catch {
+    return [];
+  }
+}
 
 export function HistoryPage() {
   const [records, setRecords] = useState<HistoryRecord[]>([]);
@@ -52,6 +63,12 @@ export function HistoryPage() {
       { title: '生成时间', dataIndex: 'createdAt', width: 180 },
       { title: '核心描述摘要', dataIndex: 'coreInput', ellipsis: true },
       { title: '风格', dataIndex: 'style', width: 140, render: (value) => <Tag>{value}</Tag> },
+      {
+        title: '最终采用',
+        width: 120,
+        render: (_, record) =>
+          record.finalTitle ? <Tag color="green">已沉淀</Tag> : <Tag color="default">未设置</Tag>,
+      },
       { title: '字数', dataIndex: 'wordCount', width: 100 },
       {
         title: '操作',
@@ -104,7 +121,8 @@ export function HistoryPage() {
     [messageApi, navigate],
   );
 
-  const versions: GeneratedVersion[] = detail?.results ? JSON.parse(detail.results) : [];
+  const versions: GeneratedVersion[] = parseVersions(detail?.results);
+  const finalVersion: GeneratedVersion | null = detail?.finalResult ? JSON.parse(detail.finalResult) : null;
 
   const copyAll = async () => {
     const text = versions
@@ -120,12 +138,7 @@ export function HistoryPage() {
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
         <Typography.Title level={3}>我的历史</Typography.Title>
         <Space wrap>
-          <Select
-            style={{ width: 180 }}
-            value={style}
-            options={styleOptions}
-            onChange={setStyle}
-          />
+          <Select style={{ width: 180 }} value={style} options={styleOptions} onChange={setStyle} />
           <RangePicker
             onChange={(dates) =>
               setDateRange(
@@ -154,7 +167,7 @@ export function HistoryPage() {
         open={!!detail}
         onCancel={() => setDetail(null)}
         footer={null}
-        width={860}
+        width={960}
         title="生成详情"
       >
         <Space style={{ marginBottom: 16 }} wrap>
@@ -174,10 +187,24 @@ export function HistoryPage() {
             再次生成
           </Button>
         </Space>
+
+        {finalVersion ? (
+          <Alert
+            type="success"
+            showIcon
+            style={{ marginBottom: 16 }}
+            message={`最终采用版本：${detail?.finalTitle || finalVersion.title}`}
+            description={`最终评分：${detail?.finalScore?.toFixed(1) ?? '-'}${detail?.lastModifiedAt ? `；最后更新：${detail.lastModifiedAt}` : ''}`}
+          />
+        ) : null}
+
         <Space direction="vertical" style={{ width: '100%' }}>
           {versions.map((version) => (
             <div key={version.verNum} className="history-version-block">
-              <Typography.Title level={5}>{version.title}</Typography.Title>
+              <Typography.Title level={5}>
+                {version.title}
+                {finalVersion?.verNum === version.verNum ? <Tag color="green" style={{ marginLeft: 8 }}>最终采用</Tag> : null}
+              </Typography.Title>
               <Typography.Paragraph style={{ whiteSpace: 'pre-wrap' }}>
                 {version.content}
               </Typography.Paragraph>

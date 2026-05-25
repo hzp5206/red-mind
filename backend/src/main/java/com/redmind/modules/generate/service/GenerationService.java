@@ -16,18 +16,18 @@ import org.springframework.stereotype.Service;
 public class GenerationService {
 
     private final AiProviderRouter aiProviderRouter;
-    private final QualityScoreService qualityScoreService;
+    private final VersionReviewService versionReviewService;
     private final GenerationHistoryMapper generationHistoryMapper;
     private final QuotaService quotaService;
     private final ObjectMapper objectMapper;
 
     public GenerationService(AiProviderRouter aiProviderRouter,
-                             QualityScoreService qualityScoreService,
+                             VersionReviewService versionReviewService,
                              GenerationHistoryMapper generationHistoryMapper,
                              QuotaService quotaService,
                              ObjectMapper objectMapper) {
         this.aiProviderRouter = aiProviderRouter;
-        this.qualityScoreService = qualityScoreService;
+        this.versionReviewService = versionReviewService;
         this.generationHistoryMapper = generationHistoryMapper;
         this.quotaService = quotaService;
         this.objectMapper = objectMapper;
@@ -39,7 +39,7 @@ public class GenerationService {
 
         List<GeneratedVersion> versions = aiProviderRouter.route().generate(request);
         for (GeneratedVersion version : versions) {
-            version.setQualityScores(qualityScoreService.score(request, version));
+            versionReviewService.review(request, version);
         }
 
         String generationId = "gen_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));

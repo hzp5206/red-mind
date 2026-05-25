@@ -38,6 +38,7 @@ export function AppLayout() {
   const adminItems = [
     hasPermission('dashboard:view') ? { key: '/admin/dashboard', icon: <DashboardOutlined />, label: '后台首页' } : null,
     hasPermission('template:manage') ? { key: '/admin/templates', icon: <AppstoreOutlined />, label: '模板管理' } : null,
+    hasPermission('trending_copy:manage') ? { key: '/admin/trending-copies', icon: <BulbOutlined />, label: '爆文采集中心' } : null,
     hasPermission('sensitive_word:manage') ? { key: '/admin/sensitive-words', icon: <AlertOutlined />, label: '敏感词管理' } : null,
     hasPermission('user:manage') ? { key: '/admin/users', icon: <TeamOutlined />, label: '用户概览' } : null,
     hasPermission('role:manage') ? { key: '/admin/roles', icon: <SafetyCertificateOutlined />, label: '角色权限' } : null,
@@ -45,6 +46,7 @@ export function AppLayout() {
       ? { key: '/admin/logs', icon: <FileTextOutlined />, label: '日志中心' }
       : null,
   ].filter(Boolean) as NonNullable<MenuProps['items']>[number][];
+
   const items = [
     { key: '/create', icon: <RocketOutlined />, label: '文案生成' },
     { key: '/library', icon: <BulbOutlined />, label: '文案灵感库' },
@@ -73,7 +75,7 @@ export function AppLayout() {
       <Layout>
         <Header className="app-header">
           <Space style={{ width: '100%', justifyContent: 'space-between' }}>
-            <Typography.Text strong>高赞级内容生成中台</Typography.Text>
+            <Typography.Text strong>高转化内容生成中台</Typography.Text>
             <Dropdown menu={{ items: profileMenu }} trigger={['click']}>
               <Space className="profile-entry">
                 <Avatar style={{ backgroundColor: '#FE2C55' }}>

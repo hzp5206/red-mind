@@ -6,13 +6,30 @@ import { getTemplates } from '../api/template';
 import { getTemplateCategories } from '../api/templateCategory';
 import { GeneratedVersion, LibraryItem, TemplateItem } from '../types';
 
-function extractPreview(results: string) {
+function extractPreview(results?: string) {
+  if (!results) {
+    return '';
+  }
   try {
     const versions = JSON.parse(results) as GeneratedVersion[];
     return versions[0]?.content || results;
   } catch {
     return results;
   }
+}
+
+function buildCreateState(item: LibraryItem) {
+  return {
+    sourceLabel: item.sourceType === 'trending' ? `来自灵感库爆文样本：${item.sourceTitle || item.productName || ''}` : undefined,
+    productName: item.productName || item.sourceTitle,
+    coreDescription: item.coreInput,
+    style: item.style,
+    tone: item.tone,
+    styleSample: item.styleSample,
+    requiredKeywords: item.requiredKeywords,
+    hookPreference: item.hookPreference,
+    noteStructure: item.noteStructure,
+  };
 }
 
 export function LibraryPage() {
@@ -49,7 +66,10 @@ export function LibraryPage() {
       );
     }
     return collections.filter((item) =>
-      [item.coreInput, item.customTags, item.style].join(' ').toLowerCase().includes(keyword.toLowerCase()),
+      [item.sourceTitle, item.productName, item.coreInput, item.customTags, item.style]
+        .join(' ')
+        .toLowerCase()
+        .includes(keyword.toLowerCase()),
     );
   }, [collections, keyword, mode, templates]);
 
@@ -105,9 +125,7 @@ export function LibraryPage() {
                     </Button>
                   }
                 >
-                  <Typography.Paragraph ellipsis={{ rows: 4 }}>
-                    {item.contentExample}
-                  </Typography.Paragraph>
+                  <Typography.Paragraph ellipsis={{ rows: 4 }}>{item.contentExample}</Typography.Paragraph>
                   <Space wrap>
                     <Tag color="magenta">{categoryMap[item.category] || item.category}</Tag>
                     <Tag>{item.style}</Tag>
@@ -123,21 +141,11 @@ export function LibraryPage() {
             (currentList as LibraryItem[]).map((item) => (
               <Col span={8} key={item.id}>
                 <Card
-                  title={item.coreInput || '已收藏文案'}
+                  title={item.sourceTitle || item.coreInput || '已收藏内容'}
                   extra={
                     <Space>
-                      <Button
-                        type="link"
-                        onClick={() =>
-                          navigate('/create', {
-                            state: {
-                              coreDescription: item.coreInput,
-                              style: item.style,
-                            },
-                          })
-                        }
-                      >
-                        使用此模板
+                      <Button type="link" onClick={() => navigate('/create', { state: buildCreateState(item) })}>
+                        引用生成
                       </Button>
                       <Button type="link" onClick={() => setDetail(item)}>
                         详情
@@ -145,15 +153,16 @@ export function LibraryPage() {
                     </Space>
                   }
                 >
-                  <Typography.Paragraph type="secondary">
-                    收藏时间：{item.createdAt}
-                  </Typography.Paragraph>
+                  <Typography.Paragraph type="secondary">收藏时间：{item.createdAt}</Typography.Paragraph>
                   <Typography.Paragraph ellipsis={{ rows: 4 }}>
-                    {extractPreview(item.results)}
+                    {item.previewText || extractPreview(item.results)}
                   </Typography.Paragraph>
                   <Space wrap>
-                    <Tag color="purple">{item.customTags}</Tag>
-                    <Tag>{item.style || '未分类'}</Tag>
+                    <Tag color={item.sourceType === 'trending' ? 'volcano' : 'purple'}>
+                      {item.sourceType === 'trending' ? '爆文样本' : '生成收藏'}
+                    </Tag>
+                    {item.customTags ? <Tag color="purple">{item.customTags}</Tag> : null}
+                    {item.style ? <Tag>{item.style}</Tag> : null}
                   </Space>
                   <div style={{ marginTop: 12 }}>
                     <Popconfirm
@@ -175,17 +184,21 @@ export function LibraryPage() {
         </Row>
       )}
 
-      <Modal
-        open={!!detail}
-        onCancel={() => setDetail(null)}
-        footer={null}
-        title="收藏详情"
-        width={820}
-      >
-        <Typography.Title level={5}>{detail?.coreInput}</Typography.Title>
+      <Modal open={!!detail} onCancel={() => setDetail(null)} footer={null} title="收藏详情" width={820}>
+        <Typography.Title level={5}>{detail?.sourceTitle || detail?.coreInput}</Typography.Title>
+        <Space wrap style={{ marginBottom: 12 }}>
+          {detail?.sourceType === 'trending' ? <Tag color="volcano">爆文样本</Tag> : <Tag color="purple">生成收藏</Tag>}
+          {detail?.style ? <Tag>{detail.style}</Tag> : null}
+          {detail?.tone ? <Tag color="blue">{detail.tone}</Tag> : null}
+        </Space>
         <Typography.Paragraph style={{ whiteSpace: 'pre-wrap' }}>
-          {detail ? extractPreview(detail.results) : ''}
+          {detail?.previewText || extractPreview(detail?.results)}
         </Typography.Paragraph>
+        {detail?.noteUrl ? (
+          <Typography.Link href={detail.noteUrl} target="_blank" rel="noreferrer">
+            查看来源链接
+          </Typography.Link>
+        ) : null}
       </Modal>
     </Space>
   );

@@ -1,5 +1,5 @@
 import { http } from './http';
-import { ApiResponse, GenerateRequest, GenerateResponse } from '../types';
+import { ApiResponse, GenerateRequest, GenerateResponse, GeneratedVersion } from '../types';
 
 export function generateCopy(payload: GenerateRequest) {
   return http.post<ApiResponse<GenerateResponse>>('/generate', payload);
@@ -29,6 +29,13 @@ export function optimizeCopy(payload: OptimizePayload) {
       tags: string[];
     }>
   >('/generate/optimize', payload);
+}
+
+export function reviewGeneratedVersion(payload: {
+  request: GenerateRequest;
+  version: GeneratedVersion;
+}) {
+  return http.post<ApiResponse<GeneratedVersion>>('/generate/review', payload);
 }
 
 export async function generateCopyStream(

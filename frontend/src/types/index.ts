@@ -59,6 +59,7 @@ export interface GeneratedVersion {
   tags: string[];
   publishSuggestions?: string[];
   prePublishChecks?: PrePublishCheckItem[];
+  optimizationActions?: string[];
   qualityScores?: QualityScores;
 }
 
@@ -91,17 +92,32 @@ export interface HistoryRecord {
   persona: string;
   wordCount: number;
   results: string;
+  finalTitle?: string;
+  finalResult?: string;
+  finalScore?: number;
   isCollected: boolean;
+  lastModifiedAt?: string;
   createdAt: string;
 }
 
 export interface LibraryItem {
   id: number;
-  historyId: number;
+  historyId?: number | null;
+  trendingItemId?: number | null;
+  sourceType?: string;
+  sourceTitle?: string;
   customTags: string;
+  productName?: string;
   coreInput: string;
+  previewText?: string;
   style: string;
+  tone?: string;
   results: string;
+  noteUrl?: string;
+  styleSample?: string;
+  requiredKeywords?: string[];
+  hookPreference?: string;
+  noteStructure?: string;
   createdAt: string;
 }
 
@@ -231,4 +247,70 @@ export interface AdminPermissionItem {
   permissionCode: string;
   permissionName: string;
   moduleName: string;
+}
+
+export interface TrendingTask {
+  id: number;
+  taskName: string;
+  platformCode: string;
+  keywords: string;
+  fetchLimit: number;
+  cronExpr: string;
+  providerCode: string;
+  enabled: boolean;
+  lastRunAt?: string;
+  lastFetchedCount?: number;
+  lastStatus?: string;
+  lastMessage?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface TrendingItem {
+  id: number;
+  taskId: number;
+  platformCode: string;
+  sourceId: string;
+  keyword?: string;
+  title: string;
+  contentText?: string;
+  authorName?: string;
+  noteUrl?: string;
+  likesCount?: number;
+  collectsCount?: number;
+  commentsCount?: number;
+  heatScore?: number;
+  tags: string[];
+  publishedAt?: string;
+  fetchedAt?: string;
+}
+
+export interface TrendingAnalysis {
+  itemId: number;
+  titleType: string;
+  hookType: string;
+  structureSummary: string;
+  interactionCta: string;
+  collectPoints: string[];
+  keywords: string[];
+  tone: string;
+  recommendedStyle: string;
+  recommendedTone: string;
+  recommendedHook: string;
+  recommendedStructure: string;
+  productHint: string;
+  coreDescription: string;
+  styleSample: string;
+  requiredKeywords: string[];
+  summary: string;
+  adaptationTips: string[];
+}
+
+export interface TrendingDashboard {
+  taskCount: number;
+  enabledTaskCount: number;
+  totalItemCount: number;
+  todayFetchedCount: number;
+  tasks: TrendingTask[];
+  latestItems: TrendingItem[];
 }

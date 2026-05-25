@@ -1,17 +1,19 @@
 import { DownOutlined } from '@ant-design/icons';
 import { Alert, Button, Card, Divider, Dropdown, Progress, Space, Tag, Typography, message } from 'antd';
 import { purifyContent } from '../api/content';
-import { optimizeCopy } from '../api/generate';
-import { GeneratedVersion } from '../types';
+import { optimizeCopy, reviewGeneratedVersion } from '../api/generate';
+import { GenerateRequest, GeneratedVersion } from '../types';
 
 interface Props {
+  request?: GenerateRequest;
   version: GeneratedVersion;
   onOpenEditor: (version: GeneratedVersion) => void;
   onCollect: () => void;
+  onFinalize?: (version: GeneratedVersion) => void;
   onVersionChange: (version: GeneratedVersion) => void;
 }
 
-export function VersionCard({ version, onOpenEditor, onCollect, onVersionChange }: Props) {
+export function VersionCard({ request, version, onOpenEditor, onCollect, onFinalize, onVersionChange }: Props) {
   const [messageApi, contextHolder] = message.useMessage();
 
   const qualityMetrics = [
@@ -31,11 +33,24 @@ export function VersionCard({ version, onOpenEditor, onCollect, onVersionChange 
     messageApi.success('复制成功');
   };
 
+  const refreshReview = async (nextVersion: GeneratedVersion) => {
+    if (!request) {
+      onVersionChange(nextVersion);
+      return;
+    }
+    const { data } = await reviewGeneratedVersion({
+      request,
+      version: nextVersion,
+    });
+    onVersionChange(data.data);
+  };
+
   const purify = async () => {
     const { data } = await purifyContent(version.content);
-    onVersionChange({
+    await refreshReview({
       ...version,
       content: data.data.cleanContent,
+      optimizationActions: Array.from(new Set([...(version.optimizationActions || []), 'purify'])),
     });
     messageApi.success(`净化完成，替换 ${data.data.replacedWords.length} 处`);
   };
@@ -58,13 +73,31 @@ export function VersionCard({ version, onOpenEditor, onCollect, onVersionChange 
       content: version.content,
       tags: version.tags,
     });
-    onVersionChange({
+    await refreshReview({
       ...version,
       title: data.data.title,
       content: data.data.content,
       tags: data.data.tags,
+      optimizationActions: Array.from(new Set([...(version.optimizationActions || []), option])),
     });
     messageApi.success('优化完成');
+  };
+
+  const applyTitleCandidate = async (title: string) => {
+    await refreshReview({
+      ...version,
+      title,
+      optimizationActions: Array.from(new Set([...(version.optimizationActions || []), 'adopt_title_candidate'])),
+    });
+    messageApi.success('已采用标题候选并重新评分');
+  };
+
+  const manualReview = async () => {
+    await refreshReview({
+      ...version,
+      optimizationActions: Array.from(new Set([...(version.optimizationActions || []), 'manual_review'])),
+    });
+    messageApi.success('发布前检查已刷新');
   };
 
   return (
@@ -93,6 +126,9 @@ export function VersionCard({ version, onOpenEditor, onCollect, onVersionChange 
         <Space wrap style={{ marginBottom: 12 }}>
           {version.angleLabel ? <Tag color="purple">{version.angleLabel}</Tag> : null}
           {version.hookType ? <Tag color="blue">{version.hookType}</Tag> : null}
+          {version.optimizationActions?.length ? (
+            <Tag color="gold">已优化 {version.optimizationActions.length} 次</Tag>
+          ) : null}
         </Space>
 
         {version.strategySummary ? (
@@ -111,7 +147,15 @@ export function VersionCard({ version, onOpenEditor, onCollect, onVersionChange 
           <Space direction="vertical" style={{ width: '100%', marginBottom: 16 }}>
             <Typography.Text strong>标题候选</Typography.Text>
             {version.titleCandidates.map((candidate) => (
-              <Card key={candidate.title} size="small">
+              <Card
+                key={candidate.title}
+                size="small"
+                extra={
+                  <Button type="link" onClick={() => applyTitleCandidate(candidate.title)}>
+                    采用并重评
+                  </Button>
+                }
+              >
                 <Space direction="vertical" size={4} style={{ width: '100%' }}>
                   <Space wrap>
                     <Tag color="magenta">{candidate.score?.toFixed(1) ?? '-'}</Tag>
@@ -257,8 +301,10 @@ export function VersionCard({ version, onOpenEditor, onCollect, onVersionChange 
               帮我优化 <DownOutlined />
             </Button>
           </Dropdown>
+          <Button onClick={manualReview}>一键体检</Button>
           <Button onClick={purify}>内容净化</Button>
           <Button onClick={() => onOpenEditor(version)}>在编辑区打开</Button>
+          {onFinalize ? <Button onClick={() => onFinalize(version)}>设为最终采用</Button> : null}
           <Button onClick={onCollect}>收藏至灵感库</Button>
         </Space>
       </Card>

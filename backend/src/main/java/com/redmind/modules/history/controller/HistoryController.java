@@ -1,12 +1,15 @@
 package com.redmind.modules.history.controller;
 
 import com.redmind.common.api.ApiResponse;
+import com.redmind.modules.history.dto.HistoryFinalizeRequest;
 import com.redmind.modules.history.dto.HistoryPageResponse;
 import com.redmind.modules.history.service.HistoryService;
+import javax.validation.Valid;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -39,6 +42,12 @@ public class HistoryController {
     @PostMapping("/{id}/collect")
     public ApiResponse<Void> collect(@PathVariable Long id) {
         historyService.collect(id);
+        return ApiResponse.success(null);
+    }
+
+    @PostMapping("/{id}/finalize")
+    public ApiResponse<Void> finalizeVersion(@PathVariable Long id, @Valid @RequestBody HistoryFinalizeRequest request) {
+        historyService.finalizeVersion(id, request);
         return ApiResponse.success(null);
     }
 }

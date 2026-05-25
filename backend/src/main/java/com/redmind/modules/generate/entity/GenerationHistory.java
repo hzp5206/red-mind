@@ -18,6 +18,11 @@ public class GenerationHistory {
     private String persona;
     private Integer wordCount;
     private String results;
+    private String finalTitle;
+    private String finalResult;
+    private String optimizationActions;
+    private Double finalScore;
     private Boolean isCollected;
+    private LocalDateTime lastModifiedAt;
     private LocalDateTime createdAt;
 }
