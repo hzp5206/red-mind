@@ -27,9 +27,7 @@ export function VersionCard({ request, version, onOpenEditor, onCollect, onFinal
   ];
 
   const copyPlainText = async () => {
-    await navigator.clipboard.writeText(
-      `${version.title}\n\n${version.content}\n\n${version.tags.join(' ')}`,
-    );
+    await navigator.clipboard.writeText(`${version.title}\n\n${version.content}\n\n${version.tags.join(' ')}`);
     messageApi.success('复制成功');
   };
 
@@ -126,9 +124,7 @@ export function VersionCard({ request, version, onOpenEditor, onCollect, onFinal
         <Space wrap style={{ marginBottom: 12 }}>
           {version.angleLabel ? <Tag color="purple">{version.angleLabel}</Tag> : null}
           {version.hookType ? <Tag color="blue">{version.hookType}</Tag> : null}
-          {version.optimizationActions?.length ? (
-            <Tag color="gold">已优化 {version.optimizationActions.length} 次</Tag>
-          ) : null}
+          {version.optimizationActions?.length ? <Tag color="gold">已优化 {version.optimizationActions.length} 次</Tag> : null}
         </Space>
 
         {version.strategySummary ? (
@@ -161,18 +157,14 @@ export function VersionCard({ request, version, onOpenEditor, onCollect, onFinal
                     <Tag color="magenta">{candidate.score?.toFixed(1) ?? '-'}</Tag>
                     <Typography.Text strong>{candidate.title}</Typography.Text>
                   </Space>
-                  {candidate.reason ? (
-                    <Typography.Text type="secondary">{candidate.reason}</Typography.Text>
-                  ) : null}
+                  {candidate.reason ? <Typography.Text type="secondary">{candidate.reason}</Typography.Text> : null}
                 </Space>
               </Card>
             ))}
           </Space>
         ) : null}
 
-        <Typography.Paragraph style={{ whiteSpace: 'pre-wrap' }}>
-          {version.content}
-        </Typography.Paragraph>
+        <Typography.Paragraph style={{ whiteSpace: 'pre-wrap' }}>{version.content}</Typography.Paragraph>
 
         {version.cta ? (
           <Alert
@@ -190,6 +182,46 @@ export function VersionCard({ request, version, onOpenEditor, onCollect, onFinal
           ))}
         </Space>
 
+        {version.trendingReferenceTitles?.length ? (
+          <>
+            <Divider />
+            <Typography.Text strong>参考样本</Typography.Text>
+            <div style={{ marginTop: 12, marginBottom: 16 }}>
+              <Space wrap>
+                {version.trendingReferenceTitles.map((title) => (
+                  <Tag color="volcano" key={title}>{title}</Tag>
+                ))}
+              </Space>
+            </div>
+          </>
+        ) : null}
+
+        {version.referenceTakeaways?.length ? (
+          <>
+            <Typography.Text strong>样本借鉴点</Typography.Text>
+            <div style={{ marginTop: 12, marginBottom: 16 }}>
+              <Space direction="vertical" size={6} style={{ width: '100%' }}>
+                {version.referenceTakeaways.map((item) => (
+                  <Typography.Text key={item}>- {item}</Typography.Text>
+                ))}
+              </Space>
+            </div>
+          </>
+        ) : null}
+
+        {version.differentiationTips?.length ? (
+          <>
+            <Typography.Text strong>差异化建议</Typography.Text>
+            <div style={{ marginTop: 12, marginBottom: 16 }}>
+              <Space direction="vertical" size={6} style={{ width: '100%' }}>
+                {version.differentiationTips.map((item) => (
+                  <Typography.Text key={item}>- {item}</Typography.Text>
+                ))}
+              </Space>
+            </div>
+          </>
+        ) : null}
+
         <Divider />
 
         {qualityMetrics.some((item) => typeof item.value === 'number') ? (
@@ -200,11 +232,7 @@ export function VersionCard({ request, version, onOpenEditor, onCollect, onFinal
                 typeof item.value === 'number' ? (
                   <div key={item.label} style={{ marginBottom: 10 }}>
                     <Typography.Text>{item.label}</Typography.Text>
-                    <Progress
-                      percent={Math.round((item.value ?? 0) * 20)}
-                      size="small"
-                      format={() => (item.value ?? 0).toFixed(1)}
-                    />
+                    <Progress percent={Math.round((item.value ?? 0) * 20)} size="small" format={() => (item.value ?? 0).toFixed(1)} />
                   </div>
                 ) : null,
               )}
@@ -218,9 +246,7 @@ export function VersionCard({ request, version, onOpenEditor, onCollect, onFinal
             <div style={{ marginTop: 12, marginBottom: 16 }}>
               <Space wrap>
                 {version.qualityScores.strengths.map((strength) => (
-                  <Tag color="green" key={strength}>
-                    {strength}
-                  </Tag>
+                  <Tag color="green" key={strength}>{strength}</Tag>
                 ))}
               </Space>
             </div>
@@ -269,9 +295,7 @@ export function VersionCard({ request, version, onOpenEditor, onCollect, onFinal
             <div style={{ marginTop: 12, marginBottom: 16 }}>
               <Space wrap>
                 {version.qualityScores.complianceIssues.map((issue) => (
-                  <Tag color={issue.includes('未发现') ? 'green' : 'orange'} key={issue}>
-                    {issue}
-                  </Tag>
+                  <Tag color={issue.includes('未发现') ? 'green' : 'orange'} key={issue}>{issue}</Tag>
                 ))}
               </Space>
             </div>
@@ -279,9 +303,7 @@ export function VersionCard({ request, version, onOpenEditor, onCollect, onFinal
         ) : null}
 
         <Space wrap>
-          <Button type="primary" onClick={copyPlainText}>
-            一键复制
-          </Button>
+          <Button type="primary" onClick={copyPlainText}>一键复制</Button>
           <Dropdown
             menu={{
               items: [

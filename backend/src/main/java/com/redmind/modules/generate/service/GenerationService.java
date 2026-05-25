@@ -19,23 +19,27 @@ public class GenerationService {
     private final VersionReviewService versionReviewService;
     private final GenerationHistoryMapper generationHistoryMapper;
     private final QuotaService quotaService;
+    private final TrendingReferenceService trendingReferenceService;
     private final ObjectMapper objectMapper;
 
     public GenerationService(AiProviderRouter aiProviderRouter,
                              VersionReviewService versionReviewService,
                              GenerationHistoryMapper generationHistoryMapper,
                              QuotaService quotaService,
+                             TrendingReferenceService trendingReferenceService,
                              ObjectMapper objectMapper) {
         this.aiProviderRouter = aiProviderRouter;
         this.versionReviewService = versionReviewService;
         this.generationHistoryMapper = generationHistoryMapper;
         this.quotaService = quotaService;
+        this.trendingReferenceService = trendingReferenceService;
         this.objectMapper = objectMapper;
     }
 
     public GenerateResponse generate(GenerateRequest request) {
         Long userId = JwtUserContext.getUserId();
         quotaService.checkAndConsume(userId);
+        trendingReferenceService.attachReferences(request);
 
         List<GeneratedVersion> versions = aiProviderRouter.route().generate(request);
         for (GeneratedVersion version : versions) {

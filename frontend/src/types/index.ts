@@ -57,6 +57,9 @@ export interface GeneratedVersion {
   titleCandidates?: TitleCandidate[];
   content: string;
   tags: string[];
+  trendingReferenceTitles?: string[];
+  referenceTakeaways?: string[];
+  differentiationTips?: string[];
   publishSuggestions?: string[];
   prePublishChecks?: PrePublishCheckItem[];
   optimizationActions?: string[];

@@ -22,6 +22,9 @@ public class GeneratedVersion {
     private List<TitleCandidate> titleCandidates;
     private String content;
     private List<String> tags;
+    private List<String> trendingReferenceTitles;
+    private List<String> referenceTakeaways;
+    private List<String> differentiationTips;
     private List<String> publishSuggestions;
     private List<PrePublishCheckItem> prePublishChecks;
     private List<String> optimizationActions;

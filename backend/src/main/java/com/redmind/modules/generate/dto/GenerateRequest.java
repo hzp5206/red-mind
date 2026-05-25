@@ -39,4 +39,6 @@ public class GenerateRequest {
     private List<String> forbiddenExpressions;
     private String referenceUrl;
     private String styleSample;
+    private List<TrendingReferenceCue> trendingReferences;
+    private String trendingStrategyBrief;
 }

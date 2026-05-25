@@ -4,9 +4,12 @@ import com.redmind.modules.generate.dto.GenerateRequest;
 import com.redmind.modules.generate.dto.GeneratedVersion;
 import com.redmind.modules.generate.dto.PrePublishCheckItem;
 import com.redmind.modules.generate.dto.TitleCandidate;
+import com.redmind.modules.generate.dto.TrendingReferenceCue;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
@@ -39,27 +42,32 @@ public class MockAiProvider implements AiProvider {
             request.getUseScenarios(),
             Arrays.asList("通勤前", "出门前", "日常复购场景")
         );
-        List<String> audiences = fallbackList(request.getTargetAudience(), Arrays.asList("精准种草人群"));
+        List<String> audiences = fallbackList(request.getTargetAudience(), Collections.singletonList("精准种草人群"));
+        List<TrendingReferenceCue> references = request.getTrendingReferences() == null
+            ? Collections.emptyList() : request.getTrendingReferences();
 
         for (int index = 0; index < BLUEPRINTS.size(); index++) {
             VersionBlueprint blueprint = BLUEPRINTS.get(index);
-            List<TitleCandidate> titleCandidates = buildTitleCandidates(request, blueprint, coreWords, sellingPoints, index);
+            List<TitleCandidate> titleCandidates = buildTitleCandidates(request, blueprint, coreWords, sellingPoints, references, index);
             String title = titleCandidates.get(0).getTitle();
-            String opening = buildOpening(request, scenarios, index);
+            String opening = buildOpening(request, blueprint, scenarios, references, index);
             String cta = buildCta(request, blueprint);
-            String content = buildContent(request, opening, cta, coreWords, sellingPoints, scenarios, audiences);
+            String content = buildContent(request, opening, cta, coreWords, sellingPoints, scenarios, audiences, references);
             versions.add(GeneratedVersion.builder()
                 .verNum(index + 1)
                 .angleLabel(blueprint.getAngleLabel())
-                .hookType(blueprint.getHookType())
-                .strategySummary(buildStrategySummary(request, blueprint, sellingPoints, scenarios, audiences))
+                .hookType(resolveHookType(blueprint, references))
+                .strategySummary(buildStrategySummary(request, blueprint, sellingPoints, scenarios, audiences, references))
                 .opening(opening)
                 .cta(cta)
                 .title(title)
                 .titleCandidates(titleCandidates)
                 .content(content)
                 .tags(buildTags(request, audiences, coreWords))
-                .publishSuggestions(buildPublishSuggestions(request, blueprint))
+                .trendingReferenceTitles(buildReferenceTitles(references))
+                .referenceTakeaways(buildReferenceTakeaways(references))
+                .differentiationTips(buildDifferentiationTips(request, references))
+                .publishSuggestions(buildPublishSuggestions(request, blueprint, references))
                 .prePublishChecks(buildPrePublishChecks(title, content, request))
                 .build());
         }
@@ -70,59 +78,58 @@ public class MockAiProvider implements AiProvider {
                                                       VersionBlueprint blueprint,
                                                       List<String> keywords,
                                                       List<String> sellingPoints,
+                                                      List<TrendingReferenceCue> references,
                                                       int index) {
         String subject = normalizeProductName(request);
+        String referenceKeyword = references.isEmpty() ? subject : StringUtils.defaultIfBlank(references.get(0).getKeyword(), subject);
         List<String> titles = new ArrayList<>();
         if (index == 0) {
-            titles.add("别再盲冲了，" + trimTitle(subject) + "这样选更稳");
-            titles.add(trimTitle(subject) + "避坑点，我真的后悔没早知道");
-            titles.add("想把" + trimTitle(subject) + "买对，先看这 3 点");
+            titles.add("别再盲冲了，" + trimTitle(referenceKeyword) + "这样写更稳");
+            titles.add(trimTitle(subject) + "避坑点，我真后悔没早点知道");
+            titles.add("想把" + trimTitle(subject) + "写对，先看这 3 点");
         } else if (index == 1) {
-            titles.add("我把" + trimTitle(subject) + "用了一阵，感受很真实");
+            titles.add("我把" + trimTitle(subject) + "用了一周，感受很真实");
             titles.add(trimTitle(subject) + "不是玄学，真实变化都在这");
             titles.add("真心话：这次" + trimTitle(subject) + "让我想回购");
         } else {
             titles.add(trimTitle(subject) + "值不值得冲？这篇帮你省时间");
             titles.add("关于" + trimTitle(subject) + "，先收藏这份决策清单");
-            titles.add(trimTitle(subject) + "怎么买更稳？直接抄这份思路");
+            titles.add(trimTitle(subject) + "怎么写更容易火？直接抄这份思路");
         }
 
         List<TitleCandidate> candidates = new ArrayList<>();
         for (int i = 0; i < titles.size(); i++) {
             candidates.add(TitleCandidate.builder()
                 .title(sanitize(titles.get(i), request.getForbiddenExpressions()))
-                .reason(buildTitleReason(blueprint, keywords, sellingPoints, i))
+                .reason(buildTitleReason(blueprint, keywords, sellingPoints, references, i))
                 .score(Math.max(4.2D, 4.9D - (i * 0.2D)))
                 .build());
         }
         return candidates;
     }
 
-    private String buildOpening(GenerateRequest request, List<String> scenarios, int index) {
+    private String buildOpening(GenerateRequest request,
+                                VersionBlueprint blueprint,
+                                List<String> scenarios,
+                                List<TrendingReferenceCue> references,
+                                int index) {
         String subject = normalizeProductName(request);
+        String hook = references.isEmpty() ? blueprint.getHookType() : StringUtils.defaultIfBlank(references.get(0).getHookType(), blueprint.getHookType());
         if (index == 0) {
-            return sanitize(
-                "如果你也在" + scenarios.get(0) + "反复纠结 " + subject + "，先别急着下单，我先把最容易踩坑的地方讲透。",
-                request.getForbiddenExpressions()
-            );
+            return sanitize("如果你也在" + scenarios.get(0) + "反复纠结 " + subject + "，先别急着下单，我先把最近爆文最容易抓住人的“"
+                + hook + "”开场思路讲透。", request.getForbiddenExpressions());
         }
         if (index == 1) {
-            return sanitize(
-                "这次我不是想硬夸 " + subject + "，而是把自己真实用了之后的感受、变化和小遗憾都一次说清。",
-                request.getForbiddenExpressions()
-            );
+            return sanitize("这次我不想硬夸 " + subject + "，而是把自己真的用了之后的感受、变化和小遗憾都一次说清。", request.getForbiddenExpressions());
         }
-        return sanitize(
-            "如果你想快速判断 " + subject + " 到底适不适合自己，这篇直接给你一份能收藏复看的决策清单。",
-            request.getForbiddenExpressions()
-        );
+        return sanitize("如果你想快速判断 " + subject + " 到底适不适合自己，这篇直接给你一份能收藏复看的决策清单。", request.getForbiddenExpressions());
     }
 
     private String buildCta(GenerateRequest request, VersionBlueprint blueprint) {
-        if (StringUtils.isNotBlank(request.getContentGoal()) && request.getContentGoal().contains("私信")) {
+        if (StringUtils.contains(StringUtils.defaultString(request.getContentGoal()), "私信")) {
             return "想要我把这套话术整理成可直接套用的版本，评论区留“模板”或者直接私信我。";
         }
-        if (StringUtils.isNotBlank(request.getConversionGoal()) && request.getConversionGoal().contains("下单")) {
+        if (StringUtils.contains(StringUtils.defaultString(request.getConversionGoal()), "下单")) {
             return "如果你已经心动了，先把这篇收藏起来，对照清楚再决定，别被情绪催着下单。";
         }
         return blueprint.getCta();
@@ -134,10 +141,14 @@ public class MockAiProvider implements AiProvider {
                                 List<String> words,
                                 List<String> sellingPoints,
                                 List<String> scenarios,
-                                List<String> audiences) {
+                                List<String> audiences,
+                                List<TrendingReferenceCue> references) {
         StringBuilder builder = new StringBuilder();
         builder.append(opening).append("\n\n");
-        builder.append("我把这版内容按“")
+        if (StringUtils.isNotBlank(request.getTrendingStrategyBrief())) {
+            builder.append("我先参考了最近几条高热样本的起势方式，但不会照搬，而是把它们拆成更适合当前内容的表达框架。").append("\n\n");
+        }
+        builder.append("这版内容按“")
             .append(StringUtils.defaultIfBlank(request.getNoteStructure(), "痛点 → 体验 → 结论"))
             .append("”来展开，更适合 ")
             .append(String.join(" / ", audiences))
@@ -159,7 +170,16 @@ public class MockAiProvider implements AiProvider {
             .append(scenarios.size() > 1 ? scenarios.get(1) : "日常使用")
             .append(" 这两个场景来讲，尽量不说空话，直接告诉你哪些点真的有感，哪些点只是看起来很吸引人。")
             .append("\n\n");
-        builder.append("最后给一个明确建议：如果你的目标是")
+        if (!references.isEmpty()) {
+            TrendingReferenceCue cue = references.get(0);
+            builder.append("最近爆文里最值得借鉴的是“")
+                .append(StringUtils.defaultIfBlank(cue.getHookType(), "高停留开场"))
+                .append(" + ")
+                .append(StringUtils.defaultIfBlank(cue.getStructureSummary(), "清晰结构"))
+                .append("”这一套，所以我会保留吸引人的第一句话，但把后面的判断标准说得更具体。")
+                .append("\n\n");
+        }
+        builder.append("最后给一个明确建议：如果你的目标是 ")
             .append(StringUtils.defaultIfBlank(request.getConversionGoal(), "种草转化"))
             .append("，那就优先围绕“")
             .append(sellingPoints.get(0))
@@ -173,14 +193,22 @@ public class MockAiProvider implements AiProvider {
                                         VersionBlueprint blueprint,
                                         List<String> sellingPoints,
                                         List<String> scenarios,
-                                        List<String> audiences) {
-        return sanitize(
-            "围绕“" + sellingPoints.get(0) + "”切入，用" + blueprint.getHookType()
-                + "抓住停留，再结合 " + String.join(" / ", scenarios)
-                + " 的真实场景，把内容重心落在 " + String.join(" / ", audiences)
-                + " 最关心的决策点上。",
-            request.getForbiddenExpressions()
-        );
+                                        List<String> audiences,
+                                        List<TrendingReferenceCue> references) {
+        StringBuilder summary = new StringBuilder();
+        summary.append("围绕“").append(sellingPoints.get(0)).append("”切入，先用 ")
+            .append(resolveHookType(blueprint, references))
+            .append(" 抓住停留，再结合 ")
+            .append(String.join(" / ", scenarios))
+            .append(" 的真实场景，把内容重点落在 ")
+            .append(String.join(" / ", audiences))
+            .append(" 最关心的决策点上。");
+        if (!references.isEmpty()) {
+            summary.append(" 当前额外参考了高热样本：")
+                .append(references.stream().map(TrendingReferenceCue::getTitle).collect(Collectors.joining(" / ")))
+                .append("。借鉴它们的开场和结构，但正文必须做差异化表达。");
+        }
+        return sanitize(summary.toString(), request.getForbiddenExpressions());
     }
 
     private List<String> buildTags(GenerateRequest request, List<String> audiences, List<String> coreWords) {
@@ -194,12 +222,47 @@ public class MockAiProvider implements AiProvider {
         return tags;
     }
 
-    private List<String> buildPublishSuggestions(GenerateRequest request, VersionBlueprint blueprint) {
+    private List<String> buildReferenceTitles(List<TrendingReferenceCue> references) {
+        return references.stream().map(TrendingReferenceCue::getTitle).collect(Collectors.toList());
+    }
+
+    private List<String> buildReferenceTakeaways(List<TrendingReferenceCue> references) {
+        List<String> takeaways = new ArrayList<>();
+        for (TrendingReferenceCue reference : references) {
+            String point = (reference.getCollectPoints() == null || reference.getCollectPoints().isEmpty())
+                ? "保留其高停留开场，但正文改写为自己的真实场景。"
+                : reference.getCollectPoints().get(0);
+            takeaways.add("参考《" + reference.getTitle() + "》：重点吸收“" + point + "”。");
+        }
+        return takeaways;
+    }
+
+    private List<String> buildDifferentiationTips(GenerateRequest request, List<TrendingReferenceCue> references) {
+        List<String> tips = new ArrayList<>();
+        tips.add("不要复刻原样本的句式，把开场借势后迅速切回你自己的产品场景。");
+        tips.add("把“经验分享”改成“可执行判断标准”，这样更容易形成收藏价值。");
+        if (!references.isEmpty()) {
+            tips.add("当前最像的样本是《" + references.get(0).getTitle() + "》，请重点避开它的原句和相同结尾。");
+        }
+        if (StringUtils.contains(StringUtils.defaultString(request.getTone()), "专业")) {
+            tips.add("增加数据、使用步骤或对比判断，让内容和普通种草帖拉开专业差异。");
+        } else {
+            tips.add("多加入第一人称体验和微表情表达，弱化模板感。");
+        }
+        return tips;
+    }
+
+    private List<String> buildPublishSuggestions(GenerateRequest request,
+                                                 VersionBlueprint blueprint,
+                                                 List<TrendingReferenceCue> references) {
         List<String> suggestions = new ArrayList<>();
         suggestions.add("封面首屏直接写出“" + blueprint.getAngleLabel() + "”结论，提升停留。");
         suggestions.add("前 2 段尽量保留第一人称表达，让内容更像真人分享。");
-        if (StringUtils.isNotBlank(request.getContentGoal()) && request.getContentGoal().contains("评论")) {
-            suggestions.add("结尾问题尽量二选一，能更自然拉起评论互动。");
+        if (!references.isEmpty()) {
+            suggestions.add("参考样本的高停留开场，但第二段立刻加入你自己的判断标准，形成差异。");
+        }
+        if (StringUtils.contains(StringUtils.defaultString(request.getContentGoal()), "评论")) {
+            suggestions.add("结尾问题尽量二选一，更容易拉起评论互动。");
         } else {
             suggestions.add("结尾加收藏提醒，比泛泛点赞引导更容易转化。");
         }
@@ -226,14 +289,25 @@ public class MockAiProvider implements AiProvider {
         return checks;
     }
 
-    private String buildTitleReason(VersionBlueprint blueprint, List<String> keywords, List<String> sellingPoints, int index) {
+    private String buildTitleReason(VersionBlueprint blueprint,
+                                    List<String> keywords,
+                                    List<String> sellingPoints,
+                                    List<TrendingReferenceCue> references,
+                                    int index) {
         if (index == 0) {
-            return "用" + blueprint.getHookType() + "拉停留，并提前埋入“" + sellingPoints.get(0) + "”这个决策点。";
+            return "用“" + resolveHookType(blueprint, references) + "”拉停留，并提前埋入“" + sellingPoints.get(0) + "”这个决策点。";
         }
         if (index == 1) {
             return "强化真实体验感，降低 AI 味，同时自然带出“" + keywords.get(0) + "”。";
         }
-        return "适合做收藏型标题，用户一眼就知道这篇能解决选择问题。";
+        return "适合做收藏型标题，让用户一眼就知道这篇能解决选择问题。";
+    }
+
+    private String resolveHookType(VersionBlueprint blueprint, List<TrendingReferenceCue> references) {
+        if (references.isEmpty()) {
+            return blueprint.getHookType();
+        }
+        return StringUtils.defaultIfBlank(references.get(0).getHookType(), blueprint.getHookType());
     }
 
     private List<String> fallbackList(List<String> values, List<String> defaults) {
