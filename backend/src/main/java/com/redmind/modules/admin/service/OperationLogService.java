@@ -33,6 +33,16 @@ public class OperationLogService {
     }
 
     public void log(String moduleName, String actionName, String targetType, Long targetId, String detailText) {
+        log(moduleName, actionName, targetType, targetId, detailText, null, null);
+    }
+
+    public void log(String moduleName,
+                    String actionName,
+                    String targetType,
+                    Long targetId,
+                    String detailText,
+                    String snapshotBefore,
+                    String snapshotAfter) {
         Long userId = JwtUserContext.getUserId();
         if (userId == null) {
             return;
@@ -49,6 +59,8 @@ public class OperationLogService {
         record.setTargetType(targetType);
         record.setTargetId(targetId);
         record.setDetailText(detailText);
+        record.setSnapshotBefore(snapshotBefore);
+        record.setSnapshotAfter(snapshotAfter);
         record.setCreatedAt(LocalDateTime.now());
         operationLogMapper.insert(record);
     }
@@ -85,6 +97,8 @@ public class OperationLogService {
                 .targetType(item.getTargetType())
                 .targetId(item.getTargetId())
                 .detailText(item.getDetailText())
+                .snapshotBefore(item.getSnapshotBefore())
+                .snapshotAfter(item.getSnapshotAfter())
                 .createdAt(item.getCreatedAt() == null ? null : item.getCreatedAt().format(FORMATTER))
                 .build())
                 .collect(Collectors.toList())

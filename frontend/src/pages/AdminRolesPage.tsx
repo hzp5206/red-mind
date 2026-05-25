@@ -1,17 +1,26 @@
-import { Button, Checkbox, Form, Input, Modal, Popconfirm, Space, Switch, Table, Tag, Typography, message } from 'antd';
+import { Button, Checkbox, Collapse, Form, Input, Modal, Popconfirm, Space, Switch, Table, Tag, Typography, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useEffect, useMemo, useState } from 'react';
-import { deleteAdminRole, getAdminPermissions, getAdminRoles, saveAdminRole } from '../api/adminRole';
+import { copyAdminRole, deleteAdminRole, getAdminPermissions, getAdminRoles, saveAdminRole } from '../api/adminRole';
 import { AdminPermissionItem, AdminRoleItem } from '../types';
-import { hasPermission } from '../utils/auth';
+import { hasPermission, refreshAuthProfile } from '../utils/auth';
 
 export function AdminRolesPage() {
   const [records, setRecords] = useState<AdminRoleItem[]>([]);
   const [permissions, setPermissions] = useState<AdminPermissionItem[]>([]);
   const [open, setOpen] = useState(false);
+  const [copyOpen, setCopyOpen] = useState(false);
   const [editing, setEditing] = useState<AdminRoleItem | null>(null);
+  const [copying, setCopying] = useState<AdminRoleItem | null>(null);
   const [form] = Form.useForm();
+  const [copyForm] = Form.useForm();
   const [messageApi, contextHolder] = message.useMessage();
+
+  const groupedPermissions = permissions.reduce<Record<string, AdminPermissionItem[]>>((acc, item) => {
+    acc[item.moduleName] = acc[item.moduleName] || [];
+    acc[item.moduleName].push(item);
+    return acc;
+  }, {});
 
   const loadData = async () => {
     const [{ data: roleData }, { data: permissionData }] = await Promise.all([getAdminRoles(), getAdminPermissions()]);
@@ -40,7 +49,9 @@ export function AdminRolesPage() {
         render: (value: string[]) => (
           <Space wrap>
             {value?.map((item) => (
-              <Tag key={item}>{item}</Tag>
+              <Tag key={item} color={item.startsWith('dashboard') ? 'blue' : item.startsWith('user') ? 'green' : item.startsWith('role') ? 'purple' : 'default'}>
+                {item}
+              </Tag>
             ))}
           </Space>
         ),
@@ -67,10 +78,27 @@ export function AdminRolesPage() {
             >
               编辑
             </Button>
+            <Button
+              type="link"
+              disabled={!hasPermission('role:manage')}
+              onClick={() => {
+                setCopying(record);
+                copyForm.resetFields();
+                copyForm.setFieldsValue({
+                  roleCode: `${record.roleCode}_COPY`,
+                  roleName: `${record.roleName}-副本`,
+                  descriptionText: record.descriptionText,
+                });
+                setCopyOpen(true);
+              }}
+            >
+              复制
+            </Button>
             <Popconfirm
               title="确认删除该角色吗？"
               onConfirm={async () => {
                 await deleteAdminRole(record.id);
+                await refreshAuthProfile();
                 messageApi.success('角色已删除');
                 loadData();
               }}
@@ -113,7 +141,11 @@ export function AdminRolesPage() {
         open={open}
         title={editing ? '编辑角色' : '新建角色'}
         width={760}
-        onCancel={() => setOpen(false)}
+        onCancel={() => {
+          setOpen(false);
+          setEditing(null);
+          form.resetFields();
+        }}
         onOk={async () => {
           const values = await form.validateFields();
           await saveAdminRole({
@@ -124,8 +156,11 @@ export function AdminRolesPage() {
             isActive: values.isActive,
             permissions: values.permissions,
           });
+          await refreshAuthProfile();
           messageApi.success('角色已保存');
           setOpen(false);
+          setEditing(null);
+          form.resetFields();
           loadData();
         }}
       >
@@ -143,13 +178,63 @@ export function AdminRolesPage() {
             <Switch />
           </Form.Item>
           <Form.Item name="permissions" label="权限点">
-            <Checkbox.Group
-              style={{ width: '100%' }}
-              options={permissions.map((item) => ({
-                label: `${item.moduleName} / ${item.permissionName}（${item.permissionCode}）`,
-                value: item.permissionCode,
-              }))}
-            />
+            <Form.Item noStyle shouldUpdate>
+              {() => {
+                const selectedPermissions = (form.getFieldValue('permissions') || []) as string[];
+                return (
+                  <Collapse
+                    items={Object.entries(groupedPermissions).map(([moduleName, modulePermissions]) => ({
+                      key: moduleName,
+                      label: `${moduleName}（${modulePermissions.length}）`,
+                      children: (
+                        <Checkbox.Group
+                          value={selectedPermissions}
+                          onChange={(value) => form.setFieldValue('permissions', value)}
+                          options={modulePermissions.map((item) => ({
+                            label: `${item.permissionName}（${item.permissionCode}）`,
+                            value: item.permissionCode,
+                          }))}
+                        />
+                      ),
+                    }))}
+                  />
+                );
+              }}
+            </Form.Item>
+          </Form.Item>
+        </Form>
+      </Modal>
+      <Modal
+        open={copyOpen}
+        title="复制角色"
+        onCancel={() => {
+          setCopyOpen(false);
+          setCopying(null);
+          copyForm.resetFields();
+        }}
+        onOk={async () => {
+          if (!copying) {
+            return;
+          }
+          const values = await copyForm.validateFields();
+          await copyAdminRole(copying.id, values);
+          await refreshAuthProfile();
+          messageApi.success('角色副本已创建');
+          setCopyOpen(false);
+          setCopying(null);
+          copyForm.resetFields();
+          loadData();
+        }}
+      >
+        <Form form={copyForm} layout="vertical">
+          <Form.Item name="roleCode" label="新角色编码" rules={[{ required: true }]}>
+            <Input />
+          </Form.Item>
+          <Form.Item name="roleName" label="新角色名称" rules={[{ required: true }]}>
+            <Input />
+          </Form.Item>
+          <Form.Item name="descriptionText" label="角色说明">
+            <Input.TextArea rows={3} />
           </Form.Item>
         </Form>
       </Modal>

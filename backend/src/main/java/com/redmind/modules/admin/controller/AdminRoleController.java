@@ -4,6 +4,7 @@ import com.redmind.common.api.ApiResponse;
 import com.redmind.common.security.AdminGuard;
 import com.redmind.common.security.AdminPermission;
 import com.redmind.modules.admin.dto.AdminPermissionOptionResponse;
+import com.redmind.modules.admin.dto.AdminRoleCopyRequest;
 import com.redmind.modules.admin.dto.AdminRoleResponse;
 import com.redmind.modules.admin.dto.AdminRoleSaveRequest;
 import com.redmind.modules.admin.service.AdminPermissionService;
@@ -56,6 +57,12 @@ public class AdminRoleController {
     public ApiResponse<AdminRoleResponse> save(@Valid @RequestBody AdminRoleSaveRequest request) {
         adminGuard.check(AdminPermission.ROLE_MANAGE);
         return ApiResponse.success(adminRoleService.save(request));
+    }
+
+    @PostMapping("/{id}/copy")
+    public ApiResponse<AdminRoleResponse> copy(@PathVariable Long id, @Valid @RequestBody AdminRoleCopyRequest request) {
+        adminGuard.check(AdminPermission.ROLE_MANAGE);
+        return ApiResponse.success(adminRoleService.copyRole(id, request));
     }
 
     @DeleteMapping("/{id}")

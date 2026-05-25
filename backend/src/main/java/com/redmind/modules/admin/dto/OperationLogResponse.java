@@ -15,5 +15,7 @@ public class OperationLogResponse {
     private String targetType;
     private Long targetId;
     private String detailText;
+    private String snapshotBefore;
+    private String snapshotAfter;
     private String createdAt;
 }

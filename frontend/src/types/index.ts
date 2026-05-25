@@ -123,6 +123,9 @@ export interface DashboardSummary {
   todayGenerationCount: number;
   sensitiveWordCount: number;
   todayOperationCount: number;
+  recentOperations: RecentOperationItem[];
+  adminRoleDistribution: SummaryBucketItem[];
+  operationModuleDistribution: SummaryBucketItem[];
 }
 
 export interface PaginatedResponse<T> {
@@ -150,7 +153,23 @@ export interface OperationLogItem {
   targetType: string;
   targetId?: number;
   detailText: string;
+  snapshotBefore?: string;
+  snapshotAfter?: string;
   createdAt: string;
+}
+
+export interface RecentOperationItem {
+  id: number;
+  operatorNickname: string;
+  moduleName: string;
+  actionName: string;
+  detailText: string;
+  createdAt: string;
+}
+
+export interface SummaryBucketItem {
+  label: string;
+  value: number;
 }
 
 export interface SelectOptionItem {

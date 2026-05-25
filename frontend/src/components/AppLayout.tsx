@@ -13,6 +13,7 @@ import {
 } from '@ant-design/icons';
 import { Avatar, Dropdown, Layout, Menu, Space, Typography } from 'antd';
 import type { MenuProps } from 'antd';
+import { useEffect, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { getNickname, getRole, hasPermission, logout } from '../utils/auth';
 
@@ -25,6 +26,14 @@ const profileMenu: MenuProps['items'] = [
 export function AppLayout() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [, setVersion] = useState(0);
+
+  useEffect(() => {
+    const handler = () => setVersion((current) => current + 1);
+    window.addEventListener('redmind-auth-changed', handler);
+    return () => window.removeEventListener('redmind-auth-changed', handler);
+  }, []);
+
   const isAdminUser = getRole() === 'ADMIN';
   const adminItems = [
     hasPermission('dashboard:view') ? { key: '/admin/dashboard', icon: <DashboardOutlined />, label: '后台首页' } : null,

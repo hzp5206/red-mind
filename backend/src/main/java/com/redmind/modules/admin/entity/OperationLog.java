@@ -19,5 +19,7 @@ public class OperationLog {
     private String targetType;
     private Long targetId;
     private String detailText;
+    private String snapshotBefore;
+    private String snapshotAfter;
     private LocalDateTime createdAt;
 }

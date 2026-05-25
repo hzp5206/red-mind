@@ -43,6 +43,7 @@ export function setAuthProfile(payload: { nickname?: string; role?: string; role
   if (payload.permissions) {
     localStorage.setItem('redmind_permissions', JSON.stringify(payload.permissions));
   }
+  window.dispatchEvent(new Event('redmind-auth-changed'));
 }
 
 export function isLoggedIn() {
@@ -59,5 +60,21 @@ export function logout() {
   localStorage.removeItem('redmind_role');
   localStorage.removeItem('redmind_role_code');
   localStorage.removeItem('redmind_permissions');
+  window.dispatchEvent(new Event('redmind-auth-changed'));
   window.location.href = '/login';
+}
+
+export async function refreshAuthProfile() {
+  const token = getToken();
+  if (!token) {
+    return;
+  }
+  const { getCurrentUser } = await import('../api/user');
+  const { data } = await getCurrentUser();
+  setAuthProfile({
+    nickname: data.data.nickname,
+    role: data.data.role,
+    roleCode: data.data.roleCode,
+    permissions: data.data.permissions,
+  });
 }

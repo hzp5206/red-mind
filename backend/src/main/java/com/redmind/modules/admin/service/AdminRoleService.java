@@ -3,6 +3,7 @@ package com.redmind.modules.admin.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.redmind.common.enums.UserRole;
 import com.redmind.common.exception.BizException;
+import com.redmind.modules.admin.dto.AdminRoleCopyRequest;
 import com.redmind.modules.admin.dto.AdminRoleResponse;
 import com.redmind.modules.admin.dto.AdminRoleSaveRequest;
 import com.redmind.modules.admin.entity.AdminRole;
@@ -59,6 +60,9 @@ public class AdminRoleService {
         if (role == null) {
             throw new BizException("角色不存在");
         }
+        String before = role.getId() == null ? null : "roleCode=" + role.getRoleCode()
+            + ", roleName=" + role.getRoleName()
+            + ", isActive=" + role.getIsActive();
         role.setRoleCode(request.getRoleCode());
         role.setRoleName(request.getRoleName());
         role.setDescriptionText(request.getDescriptionText());
@@ -69,7 +73,15 @@ public class AdminRoleService {
             operationLogService.log("role", "create", "admin_role", role.getId(), "新增角色：" + role.getRoleName());
         } else {
             adminRoleMapper.updateById(role);
-            operationLogService.log("role", "update", "admin_role", role.getId(), "更新角色：" + role.getRoleName());
+            operationLogService.log(
+                "role",
+                "update",
+                "admin_role",
+                role.getId(),
+                "更新角色：" + role.getRoleName(),
+                before,
+                "roleCode=" + role.getRoleCode() + ", roleName=" + role.getRoleName() + ", isActive=" + role.getIsActive()
+            );
         }
 
         adminRolePermissionMapper.delete(new LambdaQueryWrapper<AdminRolePermission>()
@@ -99,6 +111,42 @@ public class AdminRoleService {
             .eq(AdminRolePermission::getRoleCode, role.getRoleCode()));
         adminRoleMapper.deleteById(id);
         operationLogService.log("role", "delete", "admin_role", id, "删除角色：" + role.getRoleName());
+    }
+
+    @Transactional
+    public AdminRoleResponse copyRole(Long sourceId, AdminRoleCopyRequest request) {
+        AdminRole source = adminRoleMapper.selectById(sourceId);
+        if (source == null) {
+            throw new BizException("源角色不存在");
+        }
+        AdminRole target = new AdminRole();
+        target.setRoleCode(request.getRoleCode());
+        target.setRoleName(request.getRoleName());
+        target.setDescriptionText(request.getDescriptionText());
+        target.setIsActive(true);
+        target.setCreatedAt(LocalDateTime.now());
+        adminRoleMapper.insert(target);
+
+        adminRolePermissionMapper.selectList(new LambdaQueryWrapper<AdminRolePermission>()
+                .eq(AdminRolePermission::getRoleCode, source.getRoleCode()))
+            .forEach(item -> {
+                AdminRolePermission mapping = new AdminRolePermission();
+                mapping.setRoleCode(target.getRoleCode());
+                mapping.setPermissionCode(item.getPermissionCode());
+                mapping.setCreatedAt(LocalDateTime.now());
+                adminRolePermissionMapper.insert(mapping);
+            });
+
+        operationLogService.log(
+            "role",
+            "copy",
+            "admin_role",
+            target.getId(),
+            "复制角色：" + source.getRoleCode() + " -> " + target.getRoleCode(),
+            "sourceRole=" + source.getRoleCode(),
+            "targetRole=" + target.getRoleCode()
+        );
+        return toResponse(target);
     }
 
     private AdminRoleResponse toResponse(AdminRole role) {

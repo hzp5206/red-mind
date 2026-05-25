@@ -1,29 +1,43 @@
-import { Button, DatePicker, Form, InputNumber, Modal, Select, Space, Table, Tag, Typography, message } from 'antd';
+import { Button, DatePicker, Form, Input, InputNumber, Modal, Select, Space, Table, Tag, Typography, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { useEffect, useMemo, useState } from 'react';
-import { getAdminUsers, getAssignableRoles, updateAdminUser } from '../api/adminUser';
+import { exportAdminUsers, getAdminUsers, getAssignableRoles, updateAdminUser } from '../api/adminUser';
 import { AdminRoleItem, AdminUserOverview, UserManagePayload } from '../types';
-import { hasPermission } from '../utils/auth';
+import { hasPermission, refreshAuthProfile } from '../utils/auth';
 
 export function AdminUsersPage() {
   const [records, setRecords] = useState<AdminUserOverview[]>([]);
   const [roles, setRoles] = useState<AdminRoleItem[]>([]);
+  const [keyword, setKeyword] = useState('');
   const [memberType, setMemberType] = useState<string>();
+  const [role, setRole] = useState<string>();
+  const [roleCode, setRoleCode] = useState<string>();
   const [editing, setEditing] = useState<AdminUserOverview | null>(null);
   const [open, setOpen] = useState(false);
   const [form] = Form.useForm<UserManagePayload>();
   const [messageApi, contextHolder] = message.useMessage();
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [total, setTotal] = useState(0);
 
-  const loadData = async (currentMemberType?: string) => {
-    const { data } = await getAdminUsers(currentMemberType);
-    setRecords(data.data);
+  const loadData = async () => {
+    const { data } = await getAdminUsers({
+      keyword,
+      memberType,
+      role,
+      roleCode,
+      page,
+      pageSize,
+    });
+    setRecords(data.data.records);
+    setTotal(data.data.total);
   };
 
   useEffect(() => {
-    loadData(memberType);
+    loadData();
     getAssignableRoles().then(({ data }) => setRoles(data.data.filter((item) => item.isActive)));
-  }, [memberType]);
+  }, [keyword, memberType, role, roleCode, page, pageSize]);
 
   const columns: ColumnsType<AdminUserOverview> = useMemo(
     () => [
@@ -83,9 +97,12 @@ export function AdminUsersPage() {
       return;
     }
     await updateAdminUser(editing.id, values);
+    await refreshAuthProfile();
     messageApi.success('用户信息已更新');
     setOpen(false);
-    loadData(memberType);
+    setEditing(null);
+    form.resetFields();
+    loadData();
   };
 
   return (
@@ -95,18 +112,88 @@ export function AdminUsersPage() {
         <Typography.Title level={3} style={{ marginBottom: 0 }}>
           用户概览
         </Typography.Title>
-        <Select
-          allowClear
-          placeholder="筛选会员类型"
-          style={{ width: 180 }}
-          options={[
-            { label: '免费用户', value: 'FREE' },
-            { label: '会员用户', value: 'PRO' },
-          ]}
-          onChange={setMemberType}
-        />
+        <Space wrap>
+          <Input.Search
+            allowClear
+            placeholder="搜索邮箱或昵称"
+            style={{ width: 220 }}
+            onSearch={(value) => {
+              setKeyword(value);
+              setPage(1);
+            }}
+            onChange={(event) => {
+              setKeyword(event.target.value);
+              setPage(1);
+            }}
+          />
+          <Select
+            allowClear
+            placeholder="筛选会员类型"
+            style={{ width: 180 }}
+            options={[
+              { label: '免费用户', value: 'FREE' },
+              { label: '会员用户', value: 'PRO' },
+            ]}
+            onChange={(value) => {
+              setMemberType(value);
+              setPage(1);
+            }}
+          />
+          <Select
+            allowClear
+            placeholder="筛选后台身份"
+            style={{ width: 180 }}
+            options={[
+              { label: '普通用户', value: 'USER' },
+              { label: '管理员', value: 'ADMIN' },
+            ]}
+            onChange={(value) => {
+              setRole(value);
+              setPage(1);
+            }}
+          />
+          <Select
+            allowClear
+            placeholder="筛选管理员角色"
+            style={{ width: 220 }}
+            options={roles.map((item) => ({ label: item.roleName, value: item.roleCode }))}
+            onChange={(value) => {
+              setRoleCode(value);
+              setPage(1);
+            }}
+          />
+          <Button
+            disabled={!hasPermission('user:manage')}
+            onClick={async () => {
+              const { data } = await exportAdminUsers({ keyword, memberType, role, roleCode });
+              const blob = new Blob([`\uFEFF${data.data || ''}`], { type: 'text/csv;charset=utf-8;' });
+              const url = window.URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.href = url;
+              link.download = `users-${dayjs().format('YYYYMMDD-HHmmss')}.csv`;
+              link.click();
+              window.URL.revokeObjectURL(url);
+              messageApi.success('用户列表已导出');
+            }}
+          >
+            导出列表
+          </Button>
+        </Space>
       </Space>
-      <Table rowKey="id" dataSource={records} columns={columns} />
+      <Table
+        rowKey="id"
+        dataSource={records}
+        columns={columns}
+        pagination={{
+          current: page,
+          pageSize,
+          total,
+          onChange: (nextPage, nextPageSize) => {
+            setPage(nextPage);
+            setPageSize(nextPageSize);
+          },
+        }}
+      />
       <Modal
         open={open}
         title="调整用户信息"

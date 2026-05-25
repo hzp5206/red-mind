@@ -1,4 +1,4 @@
-import { Button, DatePicker, Form, Input, Space, Table, Tabs, Tag, Typography } from 'antd';
+import { Button, DatePicker, Drawer, Form, Input, Space, Table, Tabs, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { TabsProps } from 'antd';
 import dayjs from 'dayjs';
@@ -33,6 +33,7 @@ export function AdminLogsPage() {
   const [pageSize, setPageSize] = useState(20);
   const [generationTotal, setGenerationTotal] = useState(0);
   const [operationTotal, setOperationTotal] = useState(0);
+  const [selectedOperation, setSelectedOperation] = useState<OperationLogItem | null>(null);
   const [generationForm] = Form.useForm();
   const [operationForm] = Form.useForm();
 
@@ -106,6 +107,15 @@ export function AdminLogsPage() {
       { title: '目标类型', dataIndex: 'targetType', width: 120 },
       { title: '目标ID', dataIndex: 'targetId', width: 100 },
       { title: '详情', dataIndex: 'detailText', ellipsis: true },
+      {
+        title: '查看',
+        width: 100,
+        render: (_, record) => (
+          <Button type="link" onClick={() => setSelectedOperation(record)}>
+            详情
+          </Button>
+        ),
+      },
       { title: '时间', dataIndex: 'createdAt', width: 180 },
     ],
     [],
@@ -214,6 +224,36 @@ export function AdminLogsPage() {
         ].filter(Boolean) as TabsProps['items'];
         return <Tabs items={items} />;
       })()}
+      <Drawer
+        open={!!selectedOperation}
+        title="操作日志详情"
+        width={520}
+        onClose={() => setSelectedOperation(null)}
+      >
+        <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+          <Typography.Text><strong>操作人：</strong>{selectedOperation?.operatorNickname}（{selectedOperation?.operatorId}）</Typography.Text>
+          <Typography.Text><strong>模块：</strong>{selectedOperation ? (moduleLabelMap[selectedOperation.moduleName] || selectedOperation.moduleName) : '-'}</Typography.Text>
+          <Typography.Text><strong>动作：</strong>{selectedOperation ? (actionLabelMap[selectedOperation.actionName] || selectedOperation.actionName) : '-'}</Typography.Text>
+          <Typography.Text><strong>目标类型：</strong>{selectedOperation?.targetType || '-'}</Typography.Text>
+          <Typography.Text><strong>目标ID：</strong>{selectedOperation?.targetId || '-'}</Typography.Text>
+          <Typography.Text><strong>时间：</strong>{selectedOperation?.createdAt || '-'}</Typography.Text>
+          <Typography.Paragraph>
+            <strong>详情说明：</strong>
+            <br />
+            {selectedOperation?.detailText || '-'}
+          </Typography.Paragraph>
+          <Typography.Paragraph>
+            <strong>变更前快照：</strong>
+            <br />
+            {selectedOperation?.snapshotBefore || '—'}
+          </Typography.Paragraph>
+          <Typography.Paragraph>
+            <strong>变更后快照：</strong>
+            <br />
+            {selectedOperation?.snapshotAfter || '—'}
+          </Typography.Paragraph>
+        </Space>
+      </Drawer>
     </Space>
   );
 }
