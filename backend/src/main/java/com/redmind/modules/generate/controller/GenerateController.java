@@ -1,6 +1,7 @@
 package com.redmind.modules.generate.controller;
 
 import com.redmind.common.api.ApiResponse;
+import com.redmind.modules.generate.dto.AiRuntimeInfoResponse;
 import com.redmind.modules.generate.dto.GenerateRequest;
 import com.redmind.modules.generate.dto.GenerateResponse;
 import com.redmind.modules.generate.dto.GeneratedVersion;
@@ -13,6 +14,7 @@ import com.redmind.modules.generate.service.SseGenerationService;
 import com.redmind.modules.generate.service.VersionReviewService;
 import javax.validation.Valid;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -40,6 +42,11 @@ public class GenerateController {
     @PostMapping
     public ApiResponse<GenerateResponse> generate(@Valid @RequestBody GenerateRequest request) {
         return ApiResponse.success(generationService.generate(request));
+    }
+
+    @GetMapping("/runtime-info")
+    public ApiResponse<AiRuntimeInfoResponse> runtimeInfo() {
+        return ApiResponse.success(generationService.runtimeInfo());
     }
 
     @PostMapping("/stream")

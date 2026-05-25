@@ -17,12 +17,12 @@ import {
 } from 'antd';
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { generateCopyStream } from '../api/generate';
+import { generateCopyStream, getAiRuntimeInfo } from '../api/generate';
 import { collectHistory, finalizeHistoryVersion } from '../api/history';
 import { getCurrentUser } from '../api/user';
 import { EditorModal } from '../components/EditorModal';
 import { VersionCard } from '../components/VersionCard';
-import { GenerateRequest, GeneratedVersion, QualityScores, UserProfile } from '../types';
+import { AiRuntimeInfo, GenerateRequest, GeneratedVersion, QualityScores, UserProfile } from '../types';
 
 const styleOptions = [
   { label: '好物推荐', value: 'good_item' },
@@ -102,10 +102,12 @@ export function CreatePage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [selectedVersion, setSelectedVersion] = useState<number | null>(null);
   const [prefillSource, setPrefillSource] = useState<string>('');
+  const [runtimeInfo, setRuntimeInfo] = useState<AiRuntimeInfo | null>(null);
   const location = useLocation();
 
   useEffect(() => {
     getCurrentUser().then(({ data }) => setProfile(data.data));
+    getAiRuntimeInfo().then(({ data }) => setRuntimeInfo(data.data));
   }, []);
 
   useEffect(() => {
@@ -219,6 +221,7 @@ export function CreatePage() {
           }
           messageApi.success('生成完成');
           getCurrentUser().then(({ data }) => setProfile(data.data));
+          getAiRuntimeInfo().then(({ data }) => setRuntimeInfo(data.data));
         }
 
         if (event === 'error') {
@@ -248,16 +251,14 @@ export function CreatePage() {
               <Typography.Text type="secondary">
                 当前账号：{profile?.nickname || '创作者'}，已使用 {profile?.dailyGenCount ?? 0} 次。
               </Typography.Text>
+              <Space wrap>
+                <Tag color="blue">当前 Provider：{runtimeInfo?.provider || '-'}</Tag>
+                <Tag color="purple">当前模型：{runtimeInfo?.model || '-'}</Tag>
+              </Space>
             </Space>
 
             {prefillSource ? (
-              <Alert
-                type="info"
-                showIcon
-                style={{ marginBottom: 16 }}
-                message="已带入外部灵感"
-                description={prefillSource}
-              />
+              <Alert type="info" showIcon style={{ marginBottom: 16 }} message="已带入外部灵感" description={prefillSource} />
             ) : null}
 
             <Alert

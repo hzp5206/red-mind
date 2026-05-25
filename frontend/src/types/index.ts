@@ -252,6 +252,31 @@ export interface AdminPermissionItem {
   moduleName: string;
 }
 
+export interface AiSetting {
+  provider: string;
+  baseUrl: string;
+  model: string;
+  chatPath: string;
+  apiKeyMasked?: string | null;
+  apiKeyConfigured: boolean;
+  providerOptions: string[];
+  modelOptions: string[];
+}
+
+export interface AiConnectivityTestResult {
+  success: boolean;
+  provider: string;
+  model: string;
+  baseUrl: string;
+  message: string;
+}
+
+export interface AiRuntimeInfo {
+  provider: string;
+  model: string;
+  baseUrl: string;
+}
+
 export interface TrendingTask {
   id: number;
   taskName: string;

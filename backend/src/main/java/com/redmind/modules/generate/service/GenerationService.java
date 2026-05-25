@@ -2,9 +2,11 @@ package com.redmind.modules.generate.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.redmind.common.security.JwtUserContext;
+import com.redmind.common.config.RedMindAiProperties;
 import com.redmind.modules.generate.dto.GenerateRequest;
 import com.redmind.modules.generate.dto.GenerateResponse;
 import com.redmind.modules.generate.dto.GeneratedVersion;
+import com.redmind.modules.generate.dto.AiRuntimeInfoResponse;
 import com.redmind.modules.generate.entity.GenerationHistory;
 import com.redmind.modules.generate.mapper.GenerationHistoryMapper;
 import java.time.LocalDateTime;
@@ -20,6 +22,7 @@ public class GenerationService {
     private final GenerationHistoryMapper generationHistoryMapper;
     private final QuotaService quotaService;
     private final TrendingReferenceService trendingReferenceService;
+    private final RedMindAiProperties redMindAiProperties;
     private final ObjectMapper objectMapper;
 
     public GenerationService(AiProviderRouter aiProviderRouter,
@@ -27,12 +30,14 @@ public class GenerationService {
                              GenerationHistoryMapper generationHistoryMapper,
                              QuotaService quotaService,
                              TrendingReferenceService trendingReferenceService,
+                             RedMindAiProperties redMindAiProperties,
                              ObjectMapper objectMapper) {
         this.aiProviderRouter = aiProviderRouter;
         this.versionReviewService = versionReviewService;
         this.generationHistoryMapper = generationHistoryMapper;
         this.quotaService = quotaService;
         this.trendingReferenceService = trendingReferenceService;
+        this.redMindAiProperties = redMindAiProperties;
         this.objectMapper = objectMapper;
     }
 
@@ -49,6 +54,14 @@ public class GenerationService {
         String generationId = "gen_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
         Long historyId = saveHistory(userId, request, versions);
         return new GenerateResponse(historyId, generationId, versions, 1);
+    }
+
+    public AiRuntimeInfoResponse runtimeInfo() {
+        return AiRuntimeInfoResponse.builder()
+            .provider(redMindAiProperties.getProvider())
+            .model(redMindAiProperties.getModel())
+            .baseUrl(redMindAiProperties.getBaseUrl())
+            .build();
     }
 
     private Long saveHistory(Long userId, GenerateRequest request, List<GeneratedVersion> versions) {

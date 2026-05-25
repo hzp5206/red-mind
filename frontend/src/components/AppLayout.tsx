@@ -1,5 +1,6 @@
 import {
   AlertOutlined,
+  ApiOutlined,
   BulbOutlined,
   CrownOutlined,
   DashboardOutlined,
@@ -38,6 +39,7 @@ export function AppLayout() {
   const adminItems = [
     hasPermission('dashboard:view') ? { key: '/admin/dashboard', icon: <DashboardOutlined />, label: '后台首页' } : null,
     hasPermission('template:manage') ? { key: '/admin/templates', icon: <AppstoreOutlined />, label: '模板管理' } : null,
+    hasPermission('ai_setting:manage') ? { key: '/admin/ai-settings', icon: <ApiOutlined />, label: 'AI 配置中心' } : null,
     hasPermission('trending_copy:manage') ? { key: '/admin/trending-copies', icon: <BulbOutlined />, label: '爆文采集中心' } : null,
     hasPermission('sensitive_word:manage') ? { key: '/admin/sensitive-words', icon: <AlertOutlined />, label: '敏感词管理' } : null,
     hasPermission('user:manage') ? { key: '/admin/users', icon: <TeamOutlined />, label: '用户概览' } : null,

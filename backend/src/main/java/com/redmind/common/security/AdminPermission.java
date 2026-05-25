@@ -11,6 +11,7 @@ public final class AdminPermission {
     public static final String GENERATION_LOG_VIEW = "generation_log:view";
     public static final String OPERATION_LOG_VIEW = "operation_log:view";
     public static final String TRENDING_COPY_MANAGE = "trending_copy:manage";
+    public static final String AI_SETTING_MANAGE = "ai_setting:manage";
 
     private AdminPermission() {
     }

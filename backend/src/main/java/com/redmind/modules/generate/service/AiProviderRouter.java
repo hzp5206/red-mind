@@ -17,9 +17,17 @@ public class AiProviderRouter {
     }
 
     public AiProvider route() {
+        String providerCode = normalizeProvider(aiProperties.getProvider());
         return providers.stream()
-            .filter(provider -> provider.support(aiProperties.getProvider()))
+            .filter(provider -> provider.support(providerCode))
             .findFirst()
             .orElseThrow(() -> new BizException("未找到可用的 AI Provider: " + aiProperties.getProvider()));
+    }
+
+    private String normalizeProvider(String provider) {
+        if ("deepseek".equalsIgnoreCase(provider)) {
+            return "openai";
+        }
+        return provider;
     }
 }

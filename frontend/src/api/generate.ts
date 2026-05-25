@@ -1,5 +1,5 @@
 import { http } from './http';
-import { ApiResponse, GenerateRequest, GenerateResponse, GeneratedVersion } from '../types';
+import { AiRuntimeInfo, ApiResponse, GenerateRequest, GenerateResponse, GeneratedVersion } from '../types';
 
 export function generateCopy(payload: GenerateRequest) {
   return http.post<ApiResponse<GenerateResponse>>('/generate', payload);
@@ -36,6 +36,10 @@ export function reviewGeneratedVersion(payload: {
   version: GeneratedVersion;
 }) {
   return http.post<ApiResponse<GeneratedVersion>>('/generate/review', payload);
+}
+
+export function getAiRuntimeInfo() {
+  return http.get<ApiResponse<AiRuntimeInfo>>('/generate/runtime-info');
 }
 
 export async function generateCopyStream(
