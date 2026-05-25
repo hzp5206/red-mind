@@ -1,27 +1,65 @@
 export interface GenerateRequest {
   mode: string;
+  productName?: string;
   coreDescription: string;
   style: string;
   targetAudience?: string[];
+  coreSellingPoints?: string[];
+  useScenarios?: string[];
   tone?: string;
+  conversionGoal?: string;
+  contentGoal?: string;
+  hookPreference?: string;
+  noteStructure?: string;
   wordCount: number;
   requiredKeywords?: string[];
+  forbiddenExpressions?: string[];
   referenceUrl?: string;
   styleSample?: string;
 }
 
+export interface TitleCandidate {
+  title: string;
+  reason?: string;
+  score?: number;
+}
+
+export interface PrePublishCheckItem {
+  label: string;
+  status: string;
+  detail: string;
+}
+
 export interface QualityScores {
-  titleAttraction: number;
-  keywordDensity: string;
-  complianceIssues: string[];
+  overallScore?: number;
+  titleAttraction?: number;
+  hookStrength?: number;
+  sellingPointClarity?: number;
+  emotionalAppeal?: number;
+  collectIntent?: number;
+  interactionPotential?: number;
+  authenticity?: number;
+  aiFlavorRisk?: number;
+  keywordCoverage?: string;
+  riskLevel?: string;
+  strengths?: string[];
+  complianceIssues?: string[];
 }
 
 export interface GeneratedVersion {
   verNum: number;
+  angleLabel?: string;
+  hookType?: string;
+  strategySummary?: string;
+  opening?: string;
+  cta?: string;
   title: string;
+  titleCandidates?: TitleCandidate[];
   content: string;
   tags: string[];
-  qualityScores: QualityScores;
+  publishSuggestions?: string[];
+  prePublishChecks?: PrePublishCheckItem[];
+  qualityScores?: QualityScores;
 }
 
 export interface GenerateResponse {

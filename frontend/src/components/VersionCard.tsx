@@ -1,5 +1,5 @@
 import { DownOutlined } from '@ant-design/icons';
-import { Button, Card, Divider, Dropdown, Space, Tag, Typography, message } from 'antd';
+import { Alert, Button, Card, Divider, Dropdown, Progress, Space, Tag, Typography, message } from 'antd';
 import { purifyContent } from '../api/content';
 import { optimizeCopy } from '../api/generate';
 import { GeneratedVersion } from '../types';
@@ -13,6 +13,16 @@ interface Props {
 
 export function VersionCard({ version, onOpenEditor, onCollect, onVersionChange }: Props) {
   const [messageApi, contextHolder] = message.useMessage();
+
+  const qualityMetrics = [
+    { label: '标题吸引力', value: version.qualityScores?.titleAttraction },
+    { label: '开头钩子', value: version.qualityScores?.hookStrength },
+    { label: '卖点清晰度', value: version.qualityScores?.sellingPointClarity },
+    { label: '情绪感染力', value: version.qualityScores?.emotionalAppeal },
+    { label: '收藏意愿', value: version.qualityScores?.collectIntent },
+    { label: '互动潜力', value: version.qualityScores?.interactionPotential },
+    { label: '真人感', value: version.qualityScores?.authenticity },
+  ];
 
   const copyPlainText = async () => {
     await navigator.clipboard.writeText(
@@ -30,7 +40,18 @@ export function VersionCard({ version, onOpenEditor, onCollect, onVersionChange 
     messageApi.success(`净化完成，替换 ${data.data.replacedWords.length} 处`);
   };
 
-  const optimize = async (option: 'concise' | 'rich' | 'emoji' | 'rewrite_opening') => {
+  const optimize = async (
+    option:
+      | 'concise'
+      | 'rich'
+      | 'emoji'
+      | 'rewrite_opening'
+      | 'stronger_hook'
+      | 'more_emotional'
+      | 'more_collectible'
+      | 'more_natural'
+      | 'stronger_cta',
+  ) => {
     const { data } = await optimizeCopy({
       option,
       title: version.title,
@@ -52,22 +73,167 @@ export function VersionCard({ version, onOpenEditor, onCollect, onVersionChange 
       <Card
         title={`版本 ${version.verNum}`}
         extra={
-          <Space size="small">
-            <Tag color="magenta">标题分 {version.qualityScores?.titleAttraction ?? '-'}</Tag>
-            <Tag color="geekblue">关键词 {version.qualityScores?.keywordDensity ?? '-'}</Tag>
+          <Space size="small" wrap>
+            <Tag color="magenta">综合分 {version.qualityScores?.overallScore?.toFixed(1) ?? '-'}</Tag>
+            <Tag color="geekblue">关键词 {version.qualityScores?.keywordCoverage ?? '-'}</Tag>
+            <Tag
+              color={
+                version.qualityScores?.riskLevel === 'high'
+                  ? 'red'
+                  : version.qualityScores?.riskLevel === 'medium'
+                    ? 'orange'
+                    : 'green'
+              }
+            >
+              风险 {version.qualityScores?.riskLevel ?? '-'}
+            </Tag>
           </Space>
         }
       >
+        <Space wrap style={{ marginBottom: 12 }}>
+          {version.angleLabel ? <Tag color="purple">{version.angleLabel}</Tag> : null}
+          {version.hookType ? <Tag color="blue">{version.hookType}</Tag> : null}
+        </Space>
+
+        {version.strategySummary ? (
+          <Alert
+            type="info"
+            showIcon
+            message="策略摘要"
+            description={version.strategySummary}
+            style={{ marginBottom: 16 }}
+          />
+        ) : null}
+
         <Typography.Title level={4}>{version.title}</Typography.Title>
+
+        {version.titleCandidates?.length ? (
+          <Space direction="vertical" style={{ width: '100%', marginBottom: 16 }}>
+            <Typography.Text strong>标题候选</Typography.Text>
+            {version.titleCandidates.map((candidate) => (
+              <Card key={candidate.title} size="small">
+                <Space direction="vertical" size={4} style={{ width: '100%' }}>
+                  <Space wrap>
+                    <Tag color="magenta">{candidate.score?.toFixed(1) ?? '-'}</Tag>
+                    <Typography.Text strong>{candidate.title}</Typography.Text>
+                  </Space>
+                  {candidate.reason ? (
+                    <Typography.Text type="secondary">{candidate.reason}</Typography.Text>
+                  ) : null}
+                </Space>
+              </Card>
+            ))}
+          </Space>
+        ) : null}
+
         <Typography.Paragraph style={{ whiteSpace: 'pre-wrap' }}>
           {version.content}
         </Typography.Paragraph>
+
+        {version.cta ? (
+          <Alert
+            type="success"
+            showIcon
+            message="互动收口"
+            description={version.cta}
+            style={{ marginBottom: 16 }}
+          />
+        ) : null}
+
         <Space wrap>
           {version.tags.map((tag) => (
             <Tag key={tag}>{tag}</Tag>
           ))}
         </Space>
+
         <Divider />
+
+        {qualityMetrics.some((item) => typeof item.value === 'number') ? (
+          <>
+            <Typography.Text strong>质量评分</Typography.Text>
+            <div style={{ marginTop: 12, marginBottom: 16 }}>
+              {qualityMetrics.map((item) =>
+                typeof item.value === 'number' ? (
+                  <div key={item.label} style={{ marginBottom: 10 }}>
+                    <Typography.Text>{item.label}</Typography.Text>
+                    <Progress
+                      percent={Math.round((item.value ?? 0) * 20)}
+                      size="small"
+                      format={() => (item.value ?? 0).toFixed(1)}
+                    />
+                  </div>
+                ) : null,
+              )}
+            </div>
+          </>
+        ) : null}
+
+        {version.qualityScores?.strengths?.length ? (
+          <>
+            <Typography.Text strong>亮点总结</Typography.Text>
+            <div style={{ marginTop: 12, marginBottom: 16 }}>
+              <Space wrap>
+                {version.qualityScores.strengths.map((strength) => (
+                  <Tag color="green" key={strength}>
+                    {strength}
+                  </Tag>
+                ))}
+              </Space>
+            </div>
+          </>
+        ) : null}
+
+        {version.publishSuggestions?.length ? (
+          <>
+            <Typography.Text strong>发布建议</Typography.Text>
+            <div style={{ marginTop: 12, marginBottom: 16 }}>
+              <Space direction="vertical" size={6} style={{ width: '100%' }}>
+                {version.publishSuggestions.map((suggestion) => (
+                  <Typography.Text key={suggestion}>- {suggestion}</Typography.Text>
+                ))}
+              </Space>
+            </div>
+          </>
+        ) : null}
+
+        {version.prePublishChecks?.length ? (
+          <>
+            <Typography.Text strong>发布前检查</Typography.Text>
+            <div style={{ marginTop: 12, marginBottom: 16 }}>
+              <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                {version.prePublishChecks.map((check) => (
+                  <Card key={check.label} size="small">
+                    <Space direction="vertical" size={4} style={{ width: '100%' }}>
+                      <Space wrap>
+                        <Tag color={check.status === 'pass' ? 'green' : check.status === 'warn' ? 'orange' : 'red'}>
+                          {check.status}
+                        </Tag>
+                        <Typography.Text strong>{check.label}</Typography.Text>
+                      </Space>
+                      <Typography.Text type="secondary">{check.detail}</Typography.Text>
+                    </Space>
+                  </Card>
+                ))}
+              </Space>
+            </div>
+          </>
+        ) : null}
+
+        {version.qualityScores?.complianceIssues?.length ? (
+          <>
+            <Typography.Text strong>合规提示</Typography.Text>
+            <div style={{ marginTop: 12, marginBottom: 16 }}>
+              <Space wrap>
+                {version.qualityScores.complianceIssues.map((issue) => (
+                  <Tag color={issue.includes('未发现') ? 'green' : 'orange'} key={issue}>
+                    {issue}
+                  </Tag>
+                ))}
+              </Space>
+            </div>
+          </>
+        ) : null}
+
         <Space wrap>
           <Button type="primary" onClick={copyPlainText}>
             一键复制
@@ -78,7 +244,12 @@ export function VersionCard({ version, onOpenEditor, onCollect, onVersionChange 
                 { key: 'concise', label: '精简版（200字内）', onClick: () => optimize('concise') },
                 { key: 'rich', label: '丰富版（扩展内容）', onClick: () => optimize('rich') },
                 { key: 'emoji', label: '增加 Emoji', onClick: () => optimize('emoji') },
-                { key: 'rewrite_opening', label: '更换开头', onClick: () => optimize('rewrite_opening') },
+                { key: 'rewrite_opening', label: '重写开头', onClick: () => optimize('rewrite_opening') },
+                { key: 'stronger_hook', label: '强化开头钩子', onClick: () => optimize('stronger_hook') },
+                { key: 'more_emotional', label: '提升情绪感染力', onClick: () => optimize('more_emotional') },
+                { key: 'more_collectible', label: '增强收藏价值', onClick: () => optimize('more_collectible') },
+                { key: 'more_natural', label: '降低 AI 味', onClick: () => optimize('more_natural') },
+                { key: 'stronger_cta', label: '强化互动收口', onClick: () => optimize('stronger_cta') },
               ],
             }}
           >

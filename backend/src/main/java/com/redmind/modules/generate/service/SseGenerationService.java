@@ -1,10 +1,13 @@
 package com.redmind.modules.generate.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.redmind.modules.generate.dto.GenerateRequest;
 import com.redmind.modules.generate.dto.GenerateResponse;
 import com.redmind.modules.generate.dto.GeneratedVersion;
 import java.io.IOException;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import org.springframework.stereotype.Service;
@@ -14,10 +17,12 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 public class SseGenerationService {
 
     private final GenerationService generationService;
+    private final ObjectMapper objectMapper;
     private final Executor executor = Executors.newCachedThreadPool();
 
-    public SseGenerationService(GenerationService generationService) {
+    public SseGenerationService(GenerationService generationService, ObjectMapper objectMapper) {
         this.generationService = generationService;
+        this.objectMapper = objectMapper;
     }
 
     public SseEmitter streamGenerate(GenerateRequest request) {
@@ -27,20 +32,22 @@ public class SseGenerationService {
                 GenerateResponse response = generationService.generate(request);
                 List<GeneratedVersion> versions = response.getVersions();
                 for (GeneratedVersion version : versions) {
-                    emitter.send(SseEmitter.event()
-                        .name("title")
-                        .data("{\"ver\":" + version.getVerNum() + ",\"text\":\"" + escape(version.getTitle()) + "\"}"));
-                    emitter.send(SseEmitter.event()
-                        .name("content")
-                        .data("{\"ver\":" + version.getVerNum() + ",\"text\":\"" + escape(version.getContent()) + "\"}"));
-                    emitter.send(SseEmitter.event()
-                        .name("tags")
-                        .data("{\"ver\":" + version.getVerNum() + ",\"text\":\"" + escape(String.join(",", version.getTags())) + "\"}"));
+                    Map<String, Object> strategyPayload = new LinkedHashMap<>();
+                    strategyPayload.put("ver", version.getVerNum());
+                    strategyPayload.put("angleLabel", version.getAngleLabel());
+                    strategyPayload.put("hookType", version.getHookType());
+                    strategyPayload.put("strategySummary", version.getStrategySummary());
+                    strategyPayload.put("opening", version.getOpening());
+                    strategyPayload.put("cta", version.getCta());
+                    sendJson(emitter, "strategy", strategyPayload);
+                    sendJson(emitter, "version", version);
                 }
-                emitter.send(SseEmitter.event()
-                    .name("done")
-                    .data("{\"generation_id\":\"" + response.getGenerationId()
-                        + "\",\"history_id\":" + response.getHistoryId() + ",\"credits_used\":1}"));
+
+                Map<String, Object> donePayload = new LinkedHashMap<>();
+                donePayload.put("generation_id", response.getGenerationId());
+                donePayload.put("history_id", response.getHistoryId());
+                donePayload.put("credits_used", response.getCreditsUsed());
+                sendJson(emitter, "done", donePayload);
                 emitter.complete();
             } catch (Exception exception) {
                 try {
@@ -53,7 +60,9 @@ public class SseGenerationService {
         return emitter;
     }
 
-    private String escape(String text) {
-        return text.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n");
+    private void sendJson(SseEmitter emitter, String eventName, Object payload) throws IOException {
+        emitter.send(SseEmitter.event()
+            .name(eventName)
+            .data(objectMapper.writeValueAsString(payload)));
     }
 }

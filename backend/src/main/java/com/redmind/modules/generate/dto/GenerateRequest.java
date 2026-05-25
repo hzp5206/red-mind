@@ -13,6 +13,8 @@ public class GenerateRequest {
     @NotBlank(message = "创作模式不能为空")
     private String mode;
 
+    private String productName;
+
     @NotBlank(message = "核心描述不能为空")
     private String coreDescription;
 
@@ -20,7 +22,13 @@ public class GenerateRequest {
     private String style;
 
     private List<String> targetAudience;
+    private List<String> coreSellingPoints;
+    private List<String> useScenarios;
     private String tone;
+    private String conversionGoal;
+    private String contentGoal;
+    private String hookPreference;
+    private String noteStructure;
 
     @NotNull(message = "字数不能为空")
     @Min(value = 100, message = "字数不能少于100")
@@ -28,6 +36,7 @@ public class GenerateRequest {
     private Integer wordCount;
 
     private List<String> requiredKeywords;
+    private List<String> forbiddenExpressions;
     private String referenceUrl;
     private String styleSample;
 }

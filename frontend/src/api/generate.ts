@@ -6,7 +6,16 @@ export function generateCopy(payload: GenerateRequest) {
 }
 
 export interface OptimizePayload {
-  option: 'concise' | 'rich' | 'emoji' | 'rewrite_opening';
+  option:
+    | 'concise'
+    | 'rich'
+    | 'emoji'
+    | 'rewrite_opening'
+    | 'stronger_hook'
+    | 'more_emotional'
+    | 'more_collectible'
+    | 'more_natural'
+    | 'stronger_cta';
   title: string;
   content: string;
   tags: string[];
